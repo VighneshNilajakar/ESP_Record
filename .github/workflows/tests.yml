@@ -1,0 +1,176 @@
+name: Tests
+
+# Two independent gates:
+#
+#   host-tests      Compiles every portable source with a plain host compiler at
+#                   -Werror and runs the unit tests. Catches logic and memory
+#                   bugs without hardware, and runs in well under a minute.
+#
+#   board-compiles  Cross-compiles each example for every declared board/core
+#                   combination using arduino-cli. This is the only automated
+#                   evidence that a board profile builds at all.
+#
+# Neither gate proves that audio is captured correctly on hardware. That is
+# tracked by hand in docs/hardware-checklist.md, and no row in the support
+# matrix may claim more than these two gates plus that checklist.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  host-tests:
+    name: Host tests (g++ -Werror)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # All of src/ is compiled, not just the umbrella translation unit. The
+      # ESP adapters are #if defined(ESP32)-guarded, so they compile to empty
+      # objects here and are covered by the board-compiles job instead.
+      - name: Compile and run portable C++ tests
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          g++ -std=c++17 -Wall -Wextra -Werror \
+            -I tests/native_stubs -I tests -I src \
+            $(find src -name '*.cpp' | sort) \
+            tests/test_core.cpp tests/test_controller.cpp tests/test_console.cpp tests/test_main.cpp \
+            -o build/test_adr
+          ./build/test_adr
+
+      - name: Run WAV diagnostic tests
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+
+      - name: Compile the WAV tool standalone
+        run: python -m py_compile tools/analyze_wav.py
+
+  board-compiles:
+    name: ${{ matrix.example }} / ${{ matrix.fqbn }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Arduino-ESP32 2.x: legacy driver/i2s.h.
+          - core: "esp32:esp32@2.0.14"
+            fqbn: "esp32:esp32:esp32cam"
+            example: "AIThinker_ESP32_CAM_INMP441_SDMMC"
+            label: "ESP32-CAM + INMP441 + SD_MMC (reference)"
+          - core: "esp32:esp32@2.0.14"
+            fqbn: "esp32:esp32:esp32dev"
+            example: "ESP32_I2S_SPI_SD"
+            label: "Generic ESP32 + I2S + SPI SD"
+
+          # Arduino-ESP32 3.x: ESP_I2S.h.
+          - core: "esp32:esp32@3.0.2"
+            fqbn: "esp32:esp32:esp32cam"
+            example: "AIThinker_ESP32_CAM_INMP441_SDMMC"
+            label: "ESP32-CAM on core 3.x"
+          - core: "esp32:esp32@3.0.2"
+            fqbn: "esp32:esp32:esp32dev"
+            example: "ESP32_I2S_SPI_SD"
+            label: "Generic ESP32 on core 3.x"
+          - core: "esp32:esp32@3.0.2"
+            fqbn: "esp32:esp32:esp32dev"
+            example: "ESP32_S3_I2S_SPI_SD"
+            label: "S3 sketch guarded on core 3.x"
+          - core: "esp32:esp32@3.0.2"
+            fqbn: "esp32:esp32:esp32-s3-devkitc-1"
+            example: "ESP32_S3_I2S_SPI_SD"
+            label: "ESP32-S3"
+          - core: "esp32:esp32@3.0.2"
+            fqbn: "esp32:esp32:esp32-c3-devkitm-1"
+            example: "ESP32_S3_I2S_SPI_SD"
+            label: "ESP32-C3 (single I2S controller)"
+          - core: "esp32:esp32@3.0.2"
+            fqbn: "esp32:esp32:esp32-s2-saola-1"
+            example: "ESP32_S3_I2S_SPI_SD"
+            label: "ESP32-S2"
+          - core: "esp32:esp32@3.0.2"
+            fqbn: "esp32:esp32:esp32-c6-devkitc-1"
+            example: "ESP32_S3_I2S_SPI_SD"
+            label: "ESP32-C6"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache Arduino toolchains
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/arduino
+            ~/Arduino
+          key: arduino-${{ matrix.core }}-${{ matrix.fqbn }}
+
+      - name: Install arduino-cli
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh \
+            | BINDIR=/usr/local/bin sh
+          arduino-cli version
+
+      - name: Install core ${{ matrix.core }}
+        run: arduino-cli core install --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+
+      # The repository root is exposed as a library so the examples can
+      # #include "AudioDatasetRecorder.h" without copying anything.
+      - name: Compile ${{ matrix.example }} for ${{ matrix.fqbn }}
+        run: |
+          set -euo pipefail
+          arduino-cli compile \
+            --fqbn "${{ matrix.fqbn }}" \
+            --warnings all \
+            --library "$(pwd)" \
+            "examples/${{ matrix.example }}"
+
+  example-guards:
+    name: Example self-consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # A sketch whose folder name does not match its .ino name cannot be
+      # opened by the Arduino IDE, which is the documented install path.
+      - name: Every example folder matches its sketch name
+        run: |
+          set -euo pipefail
+          failed=0
+          for dir in examples/*/; do
+            name=$(basename "$dir")
+            if [ ! -f "$dir/$name.ino" ]; then
+              echo "::error::examples/$name does not contain $name.ino"
+              failed=1
+            fi
+          done
+          exit $failed
+
+      # The Arduino CLI, by default, treats src/ as the sketch directory. The
+      # stale cache in ~/.cache/arduino from a previous job must never leak in.
+      - name: No committed recordings or build products
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -Ei '\.(wav|pcm|raw|elf|bin|hex|map)$'; then
+            echo "::error::recordings or build products are committed"
+            exit 1
+          fi
+          if [ -n "$(git ls-files 'build/*' '.pio/*')" ]; then
+            echo "::error::build output is committed"
+            exit 1
+          fi
+          echo "clean"

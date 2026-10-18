@@ -1,0 +1,31 @@
+# Arduino / ESP / PlatformIO build products
+build/
+.pio/
+.vscode/
+*.elf
+*.bin
+*.map
+*.hex
+*.o
+*.a
+*.obj
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Private or large recordings and captures. Never commit these: a dataset is
+# not source, and a stray WAV in a public repository is a good way to publish
+# someone's voice by accident.
+*.wav
+*.raw
+*.pcm
+recordings/
+captures/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp

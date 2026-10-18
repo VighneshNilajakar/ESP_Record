@@ -1,0 +1,136 @@
+#######################################
+# Syntax Coloring Map For AudioDatasetRecorder
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+AudioDatasetRecorder	KEYWORD1
+RecorderController	KEYWORD1
+RecorderConfig	KEYWORD1
+RecorderTypes	KEYWORD1
+CaptureReport	KEYWORD1
+CaptureStrategy	KEYWORD1
+AudioStats	KEYWORD1
+AudioFormat	KEYWORD1
+SampleSlot	KEYWORD1
+SourceOutput	KEYWORD1
+StreamLayout	KEYWORD1
+RawStreamLayout	KEYWORD1
+SampleConverter	KEYWORD1
+WavHeaderInfo	KEYWORD1
+WavHeaderCheck	KEYWORD1
+DirEntry	KEYWORD1
+AudioPinMap	KEYWORD1
+Status	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+end	KEYWORD2
+readWords	KEYWORD2
+outputFormat	KEYWORD2
+layout	KEYWORD2
+isRunning	KEYWORD2
+record	KEYWORD2
+savePending	KEYWORD2
+discardPending	KEYWORD2
+hasPending	KEYWORD2
+nextClipIndex	KEYWORD2
+listRecordings	KEYWORD2
+mountStorage	KEYWORD2
+unmountStorage	KEYWORD2
+configure	KEYWORD2
+configurePins	KEYWORD2
+configureDma	KEYWORD2
+configurePort	KEYWORD2
+convertBlock	KEYWORD2
+samplesForWords	KEYWORD2
+framesFromWords	KEYWORD2
+i2sWordToPcm16	KEYWORD2
+applyAttenuation	KEYWORD2
+addSample	KEYWORD2
+normalizedRms	KEYWORD2
+normalizedMean	KEYWORD2
+writePcm16WavHeader	KEYWORD2
+inspectPcm16WavHeader	KEYWORD2
+wavDataBytes	KEYWORD2
+wavFileBytes	KEYWORD2
+wavFitsClassicRiff	KEYWORD2
+isValidLabel	KEYWORD2
+sanitizeLabel	KEYWORD2
+buildClipPath	KEYWORD2
+parseClipName	KEYWORD2
+toString	KEYWORD2
+poll	KEYWORD2
+handleLine	KEYWORD2
+showHelp	KEYWORD2
+showStatus	KEYWORD2
+printBanner	KEYWORD2
+setIdle	KEYWORD2
+setRecording	KEYWORD2
+setSuccess	KEYWORD2
+setError	KEYWORD2
+allOff	KEYWORD2
+allocate	KEYWORD2
+release	KEYWORD2
+largestFreeBlock	KEYWORD2
+listDir	KEYWORD2
+fileSize	KEYWORD2
+createWriter	KEYWORD2
+write	KEYWORD2
+flush	KEYWORD2
+close	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+kMaxLabelLength	LITERAL1
+kMaxClipIndex	LITERAL1
+kMaxClipPathLength	LITERAL1
+kWavHeaderBytes	LITERAL1
+kWavMaxDataBytes	LITERAL1
+FullBuffer	LITERAL1
+Streaming	LITERAL1
+RawI2sWords	LITERAL1
+Pcm16	LITERAL1
+Left	LITERAL1
+Right	LITERAL1
+Both	LITERAL1
+
+#######################################
+# Adapters (KEYWORD3)
+#######################################
+
+LegacyI2sAudioSource	KEYWORD3
+EspI2sAudioSource	KEYWORD3
+PdmI2sAudioSource	KEYWORD3
+SdMmcStorage	KEYWORD3
+SpiSdStorage	KEYWORD3
+GpioIndicator	KEYWORD3
+NullIndicator	KEYWORD3
+CommandConsole	KEYWORD3
+ArduinoLogger	KEYWORD3
+ArduinoMillisClock	KEYWORD3
+PsramFirstAllocator	KEYWORD3
+StreamTransport	KEYWORD3
+SerialProgressSink	KEYWORD3
+
+#######################################
+# Interfaces (KEYWORD3)
+#######################################
+
+IAudioSource	KEYWORD3
+IStorageBackend	KEYWORD3
+IFileWriter	KEYWORD3
+IFileWriterFactory	KEYWORD3
+IIndicator	KEYWORD3
+IClock	KEYWORD3
+IAllocator	KEYWORD3
+ILogger	KEYWORD3
+ICommandTransport	KEYWORD3
+IProgressSink	KEYWORD3

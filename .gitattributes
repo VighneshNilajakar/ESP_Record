@@ -1,0 +1,27 @@
+# Normalize line endings in the repository, so a diff on Windows, macOS and
+# Linux shows the same thing regardless of who committed.
+* text=auto eol=lf
+
+# Arduino and PlatformIO projects are edited on Windows as often as anywhere
+# else; the IDE accepts either ending, but the repository stays LF.
+*.ino   text eol=lf
+*.h     text eol=lf
+*.cpp   text eol=lf
+*.py    text eol=lf
+*.md    text eol=lf
+*.txt   text eol=lf
+*.yml   text eol=lf
+*.ini   text eol=lf
+*.json  text eol=lf
+library.properties text eol=lf
+
+# Binary or otherwise unsafe to normalize.
+*.wav   binary
+*.pcm   binary
+*.raw   binary
+*.elf   binary
+*.bin   binary
+*.hex   binary
+*.map   binary
+*.png   binary
+*.jpg   binary
