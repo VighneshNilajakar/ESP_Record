@@ -1,6 +1,6 @@
 #include "PdmI2sAudioSource.h"
 
-#if defined(ESP32) && ADR_HAS_ESP_I2S
+#if defined(ESP32) && ADR_HAS_ESP_I2S && defined(SOC_I2S_SUPPORTS_PDM_RX) && SOC_I2S_SUPPORTS_PDM_RX
 
 namespace AudioDatasetRecorder {
 namespace adapters {
@@ -11,7 +11,7 @@ Status PdmI2sAudioSource::begin(const AudioFormat &format, SampleSlot slot) {
     if (format.sampleRateHz == 0) return Status::InvalidConfig;
     if (format.channels != 1) return Status::NotSupported;
 
-    i2s_.setPort(I2S_NUM_0);
+    /* PDM RX is bound to I2S port 0 by the hardware, and I2SClass chooses it. */
     i2s_.setPinsPdmRx(clock_, data_);
 
     int8_t slotMask = I2S_STD_SLOT_LEFT;
@@ -19,7 +19,7 @@ Status PdmI2sAudioSource::begin(const AudioFormat &format, SampleSlot slot) {
 
     /* PDM receive is fixed at 16-bit and converts to PCM in hardware. */
     if (!i2s_.begin(I2S_MODE_PDM_RX, format.sampleRateHz, I2S_DATA_BIT_WIDTH_16BIT,
-                    I2S_SLOT_MODE_MONO, slotMask, I2S_ROLE_MASTER)) {
+                    I2S_SLOT_MODE_MONO, slotMask)) {
         return Status::AudioBeginFailed;
     }
 
@@ -60,4 +60,4 @@ StreamLayout PdmI2sAudioSource::layout() const {
 }  // namespace adapters
 }  // namespace AudioDatasetRecorder
 
-#endif  // ESP32 && ADR_HAS_ESP_I2S
+#endif  // ESP32 && 3.x && PDM RX

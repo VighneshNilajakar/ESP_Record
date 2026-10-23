@@ -30,7 +30,11 @@ is evidenced and what is not.
 |---|---|---|---|---|
 | `AIThinker_ESP32_CAM_INMP441_SDMMC` | AI-Thinker ESP32-CAM | INMP441 (I2S) | on-board SD_MMC, 1-bit | 2.x or 3.x |
 | `ESP32_I2S_SPI_SD` | Generic ESP32 | I2S or PDM | SPI microSD | 2.x or 3.x |
-| `ESP32_S3_I2S_SPI_SD` | ESP32-S3, C3, S2, C6 | I2S or PDM | SPI microSD | 3.x |
+| `ESP32_S3_I2S_SPI_SD` | ESP32-S3 | I2S or PDM | SPI microSD | 3.x |
+
+The C3, S2 and C6 have no runnable sketch here yet: their pin maps are not
+confirmed on hardware, so the CI matrix compiles the adapter set for them
+instead of guessing wiring. See [docs/support-matrix.md](docs/support-matrix.md).
 
 The ESP32-CAM example is the reference profile: it is the one setup with an
 observed successful save, and it carries the most pin constraints. Its wiring:

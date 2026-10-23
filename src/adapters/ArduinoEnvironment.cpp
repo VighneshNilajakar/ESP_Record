@@ -97,7 +97,9 @@ void SerialProgressSink::onCaptureProgress(uint32_t elapsedMs, uint64_t framesCa
     const uint32_t percent =
         framesExpected == 0 ? 100U
                             : static_cast<uint32_t>((framesCaptured * 100ULL) / framesExpected);
-    stream_.printf("[timer] %u s, %u%%\n", elapsedMs / 1000U, percent > 100U ? 100U : percent);
+    stream_.printf("[timer] %lu s, %lu%%\n",
+                   static_cast<unsigned long>(elapsedMs / 1000U),
+                   static_cast<unsigned long>(percent > 100U ? 100U : percent));
 }
 
 }  // namespace adapters

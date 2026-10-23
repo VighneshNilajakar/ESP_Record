@@ -4,12 +4,24 @@
 /*
  * Arduino-ESP32 core version detection.
  *
- * Core 3.x publishes ESP_ARDUINO_VERSION_MAJOR. Core 2.x does not define it
- * at all, so defaulting to 2 keeps every adapter compiling on both lines --
- * which is the whole point of this file.
+ * The macro that carries the version lives in esp_arduino_version.h, which
+ * Arduino.h pulls in. An adapter's .cpp includes its own header before
+ * Arduino.h, so relying on the macro being visible by then is how the whole
+ * 3.x adapter once compiled itself out and left an undefined vtable: the
+ * translation unit decided it was 2.x while the sketch decided it was 3.x.
+ * Including the header explicitly makes every translation unit agree.
  *
  * Do not include this from the portable core. It exists only for adapters.
+ *
+ * Both 2.x and 3.x ship esp_arduino_version.h, but a very old core may not, so
+ * the include is conditional and the fallback stays 2.
  */
+#if defined(__has_include)
+#if __has_include(<esp_arduino_version.h>)
+#include <esp_arduino_version.h>
+#endif
+#endif
+
 #ifndef ESP_ARDUINO_VERSION_MAJOR
 #define ADR_CORE_MAJOR_VERSION 2
 #else

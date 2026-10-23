@@ -10,8 +10,8 @@ Status EspI2sAudioSource::begin(const AudioFormat &format, SampleSlot slot) {
     if (bclk_ < 0 || ws_ < 0 || data_ < 0) return Status::InvalidConfig;
     if (format.sampleRateHz == 0) return Status::InvalidConfig;
 
-    i2s_.setPort(port_);
-    /* Signature is (bclk, ws, dout, din, mclk); this is a receive-only source. */
+    /* Signature is (bclk, ws, dout, din, mclk); this is a receive-only source.
+     * I2SClass picks the port itself on 3.0.x, so there is nothing to select. */
     i2s_.setPins(bclk_, ws_, -1, data_, mclk_);
 
     i2s_slot_mode_t slotMode =
@@ -31,16 +31,14 @@ Status EspI2sAudioSource::begin(const AudioFormat &format, SampleSlot slot) {
 
     /* 32-bit slots keep the raw word intact so the core's right shift is the
      * single place where alignment is decided. */
-    if (!i2s_.begin(I2S_MODE_STD, format.sampleRateHz, I2S_DATA_BIT_WIDTH_32BIT, slotMode, slotMask,
-                    I2S_ROLE_MASTER)) {
+    if (!i2s_.begin(I2S_MODE_STD, format.sampleRateHz, I2S_DATA_BIT_WIDTH_32BIT, slotMode,
+                    slotMask)) {
         return Status::AudioBeginFailed;
     }
 
     /* Absorb DMA fill transients so the clip does not open with a click. */
     int32_t discard[64];
-    size_t read = 0;
-    i2s_.readBytes(reinterpret_cast<char *>(discard), sizeof(discard));
-    (void)read;
+    (void)i2s_.readBytes(reinterpret_cast<char *>(discard), sizeof(discard));
 
     running_ = true;
     return Status::Ok;

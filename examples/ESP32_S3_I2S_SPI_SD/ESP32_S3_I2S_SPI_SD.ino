@@ -36,6 +36,10 @@ using namespace AudioDatasetRecorder::adapters;
 #error "This sketch requires Arduino-ESP32 3.x: the PDM and ESP_I2S APIs do not exist in 2.x."
 #endif
 
+#if ADR_USE_PDM && !(defined(SOC_I2S_SUPPORTS_PDM_RX) && SOC_I2S_SUPPORTS_PDM_RX)
+#error "PDM receive is only available on ESP32-S3 in this core. Use the generic ESP32_I2S_SPI_SD example for this chip."
+#endif
+
 /* --------------------------------------------------------------- config */
 
 #ifndef ADR_USE_PDM

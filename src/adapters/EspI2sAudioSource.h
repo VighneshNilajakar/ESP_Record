@@ -30,8 +30,8 @@ namespace adapters {
 class EspI2sAudioSource : public IAudioSource {
 public:
     EspI2sAudioSource()
-        : port_(I2S_NUM_AUTO), bclk_(-1), ws_(-1), data_(-1), mclk_(-1),
-          running_(false), wordsPerFrame_(1) {}
+        : bclk_(-1), ws_(-1), data_(-1), mclk_(-1), running_(false),
+          wordsPerFrame_(1) {}
 
     void configurePins(int8_t bclk, int8_t ws, int8_t data, int8_t mclk = -1) {
         bclk_ = bclk;
@@ -39,8 +39,6 @@ public:
         data_ = data;
         mclk_ = mclk;
     }
-
-    void configurePort(i2s_port_t port) { port_ = port; }
 
     Status begin(const AudioFormat &format, SampleSlot slot);
     Status readWords(int32_t *dst, size_t capacityWords, size_t &wordsRead, uint32_t timeoutMs);
@@ -54,7 +52,6 @@ public:
 private:
     I2SClass i2s_;
 
-    i2s_port_t port_;
     int8_t bclk_;
     int8_t ws_;
     int8_t data_;

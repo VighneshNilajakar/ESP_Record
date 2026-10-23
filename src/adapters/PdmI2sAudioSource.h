@@ -9,6 +9,11 @@
 
 #include <ESP_I2S.h>
 
+/* PDM receive is an ESP32-S3 capability in IDF 5.1; C3, S2 and C6 have no
+ * PDM RX at all. Compiling the class where the driver has no setPinsPdmRx is
+ * how this adapter would otherwise fail for those targets. */
+#if defined(SOC_I2S_SUPPORTS_PDM_RX) && SOC_I2S_SUPPORTS_PDM_RX
+
 namespace AudioDatasetRecorder {
 namespace adapters {
 
@@ -56,6 +61,8 @@ private:
 
 }  // namespace adapters
 }  // namespace AudioDatasetRecorder
+
+#endif  // SOC_I2S_SUPPORTS_PDM_RX
 #endif  // ESP32 && ADR_HAS_ESP_I2S
 
 #endif  // AUDIO_DATASET_RECORDER_ADAPTERS_PDM_I2S_AUDIO_SOURCE_H

@@ -6,6 +6,7 @@
 #if defined(ESP32)
 
 #include <SD.h>
+#include <SPI.h>
 
 namespace AudioDatasetRecorder {
 namespace adapters {
@@ -23,8 +24,7 @@ namespace adapters {
  */
 class SpiSdStorage : public FsStorageBase {
 public:
-    SpiSdStorage()
-        : csPin_(-1), sckPin_(-1), misoPin_(-1), mosiPin_(-1), mounted_(false) {}
+    SpiSdStorage() : csPin_(-1), sckPin_(-1), misoPin_(-1), mosiPin_(-1) {}
 
     void configure(int8_t cs, int8_t sck = -1, int8_t miso = -1, int8_t mosi = -1) {
         csPin_ = cs;
@@ -37,9 +37,12 @@ public:
         if (mounted_) return Status::Ok;
         if (csPin_ < 0) return Status::InvalidConfig;
 
-        mounted_ = (sckPin_ < 0 || misoPin_ < 0 || mosiPin_ < 0)
-                       ? SD.begin(csPin_)
-                       : SD.begin(csPin_, sckPin_, misoPin_, mosiPin_);
+        /* SD.begin()'s second parameter is a bus, not a pin, so the pins are
+         * applied to the board's default SPI instance first. Passing -1 for a
+         * pin keeps that bus's default, which is what a CS-only configuration
+         * wants. */
+        SPI.begin(sckPin_, misoPin_, mosiPin_, csPin_);
+        mounted_ = SD.begin(csPin_, SPI);
         if (!mounted_) return Status::StorageBeginFailed;
         if (SD.cardType() == CARD_NONE) {
             SD.end();

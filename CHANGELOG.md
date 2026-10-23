@@ -78,6 +78,44 @@ which is why the CI board matrix was added alongside them.
   Capacity is now obtained from the concrete bus.
 - The examples used `AudioPinMap` unqualified although it lives in
   `AudioDatasetRecorder::profiles`.
+- `SpiSdStorage` had never been compiled, because only the SD_MMC example ran
+  on hardware. It initialised the inherited `mounted_` in its constructor's
+  member-initialiser list, which is not legal, and passed three pin numbers to
+  `SD.begin()`, whose second parameter is a `SPIClass&`, not a pin. The bus is
+  now configured with `SPI.begin(sck, miso, mosi, cs)` and handed to
+  `SD.begin(cs, SPI)`.
+- The CI board matrix named `esp32:esp32:esp32dev`, which is PlatformIO's board
+  ID. Arduino-ESP32 calls the generic board `esp32:esp32:esp32`, so that row
+  could never have installed a usable target.
+
+### Fixed by compiling the 3.x targets
+
+The 2.x path had been built and run; the 3.x path had only ever been written.
+Compiling it found that it did not build at all, for four independent reasons.
+
+- `CoreVersion.h` tested `ESP_ARDUINO_VERSION_MAJOR` without including the
+  header that defines it. An adapter `.cpp` includes its own header before
+  `Arduino.h`, so it concluded "core 2.x" while the sketch concluded "core 3.x":
+  the 3.x adapter compiled itself out and the link failed on an undefined
+  vtable. The version header is now included from `CoreVersion.h` itself, and
+  the comment that claimed 2.x lacks that header is corrected -- 2.0.14 has it.
+- `EspI2sAudioSource` used `I2SClass::setPort()` and passed a role as a sixth
+  argument to `begin()`. Neither exists in 3.0.2: the class chooses the port
+  and `begin()` takes five arguments. `configurePort()` is gone, since it could
+  not do anything on that API.
+- `PdmI2sAudioSource` was compiled unconditionally for 3.x, but PDM receive is
+  an ESP32-S3 capability in IDF 5.1; the S2, C3 and C6 have no PDM RX and no
+  `setPinsPdmRx`. The adapter is now gated on `SOC_I2S_SUPPORTS_PDM_RX`, and the
+  S3 example refuses to build with a clear message where PDM is unavailable.
+- `SerialProgressSink` formatted 32-bit values with `%u`, which is a
+  `-Wformat` warning on 3.x where those typedefs are `unsigned long`.
+
+The CI matrix also named four boards by their PlatformIO identifiers
+(`esp32dev`, `esp32-s3-devkitc-1`, `esp32-c3-devkitm-1`, `esp32-s2-saola-1`,
+`esp32-c6-devkitc-1`), none of which Arduino-ESP32 knows. The correct FQBNs are
+`esp32`, `esp32s3`, `esp32c3`, `esp32s2` and `esp32c6`. The C3, S2 and C6 rows
+now compile the adapter set from `tests/board/AdapterCompileCheck` instead of a
+sketch whose GPIO numbers cannot exist on those chips.
 
 ### Changed by the first hardware measurements
 
@@ -107,9 +145,12 @@ which is why the CI board matrix was added alongside them.
 
 ### Not claimed
 
-- No hardware validation was performed for this release. The ESP32-CAM profile
-  still rests on the user's earlier report of a successful save. Every other
-  board is compile-tested only. See `docs/support-matrix.md`.
+- Capture, metering and saving were verified once on the reference ESP32-CAM:
+  `RECORD` reported 80000/80000 frames in 5008 ms and `/test.001.wav` was
+  written at 160044 bytes and listed back. Every other board, and every 3.x
+  build, is compile-tested only; no 3.x board was available. See
+  `docs/support-matrix.md` for the measurements and `docs/hardware-checklist.md`
+  for the wiring that produced them.
 
 ## 0.1.0 — initial GitHub-ready baseline
 

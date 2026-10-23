@@ -57,7 +57,7 @@ jobs:
         run: python -m py_compile tools/analyze_wav.py
 
   board-compiles:
-    name: ${{ matrix.example }} / ${{ matrix.fqbn }}
+    name: ${{ matrix.label }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -66,42 +66,43 @@ jobs:
           # Arduino-ESP32 2.x: legacy driver/i2s.h.
           - core: "esp32:esp32@2.0.14"
             fqbn: "esp32:esp32:esp32cam"
-            example: "AIThinker_ESP32_CAM_INMP441_SDMMC"
-            label: "ESP32-CAM + INMP441 + SD_MMC (reference)"
+            sketch: "examples/AIThinker_ESP32_CAM_INMP441_SDMMC"
+            label: "ESP32-CAM + INMP441 + SD_MMC, 2.x (reference)"
           - core: "esp32:esp32@2.0.14"
-            fqbn: "esp32:esp32:esp32dev"
-            example: "ESP32_I2S_SPI_SD"
-            label: "Generic ESP32 + I2S + SPI SD"
+            fqbn: "esp32:esp32:esp32"
+            sketch: "examples/ESP32_I2S_SPI_SD"
+            label: "Generic ESP32 + I2S + SPI SD, 2.x"
 
           # Arduino-ESP32 3.x: ESP_I2S.h.
           - core: "esp32:esp32@3.0.2"
             fqbn: "esp32:esp32:esp32cam"
-            example: "AIThinker_ESP32_CAM_INMP441_SDMMC"
-            label: "ESP32-CAM on core 3.x"
+            sketch: "examples/AIThinker_ESP32_CAM_INMP441_SDMMC"
+            label: "ESP32-CAM + INMP441 + SD_MMC, 3.x"
           - core: "esp32:esp32@3.0.2"
-            fqbn: "esp32:esp32:esp32dev"
-            example: "ESP32_I2S_SPI_SD"
-            label: "Generic ESP32 on core 3.x"
+            fqbn: "esp32:esp32:esp32"
+            sketch: "examples/ESP32_I2S_SPI_SD"
+            label: "Generic ESP32 + I2S + SPI SD, 3.x"
           - core: "esp32:esp32@3.0.2"
-            fqbn: "esp32:esp32:esp32dev"
-            example: "ESP32_S3_I2S_SPI_SD"
-            label: "S3 sketch guarded on core 3.x"
+            fqbn: "esp32:esp32:esp32s3"
+            sketch: "examples/ESP32_S3_I2S_SPI_SD"
+            label: "ESP32-S3 + PDM/I2S + SPI SD, 3.x"
+
+          # No runnable sketch ships for these three yet. Their examples would
+          # have to invent pin numbers, so the matrix compiles the adapter set
+          # instead: that proves the ESP_I2S/PDM/SPI-SD code builds for the
+          # target without pretending the wiring is known.
           - core: "esp32:esp32@3.0.2"
-            fqbn: "esp32:esp32:esp32-s3-devkitc-1"
-            example: "ESP32_S3_I2S_SPI_SD"
-            label: "ESP32-S3"
+            fqbn: "esp32:esp32:esp32c3"
+            sketch: "tests/board/AdapterCompileCheck"
+            label: "ESP32-C3 adapters (compile only)"
           - core: "esp32:esp32@3.0.2"
-            fqbn: "esp32:esp32:esp32-c3-devkitm-1"
-            example: "ESP32_S3_I2S_SPI_SD"
-            label: "ESP32-C3 (single I2S controller)"
+            fqbn: "esp32:esp32:esp32s2"
+            sketch: "tests/board/AdapterCompileCheck"
+            label: "ESP32-S2 adapters (compile only)"
           - core: "esp32:esp32@3.0.2"
-            fqbn: "esp32:esp32:esp32-s2-saola-1"
-            example: "ESP32_S3_I2S_SPI_SD"
-            label: "ESP32-S2"
-          - core: "esp32:esp32@3.0.2"
-            fqbn: "esp32:esp32:esp32-c6-devkitc-1"
-            example: "ESP32_S3_I2S_SPI_SD"
-            label: "ESP32-C6"
+            fqbn: "esp32:esp32:esp32c6"
+            sketch: "tests/board/AdapterCompileCheck"
+            label: "ESP32-C6 adapters (compile only)"
 
     steps:
       - uses: actions/checkout@v4
@@ -121,25 +122,19 @@ jobs:
       - name: Install arduino-cli
         run: |
           set -euo pipefail
-          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh \
-            | BINDIR=/usr/local/bin sh
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh             | BINDIR=/usr/local/bin sh
           arduino-cli version
 
       - name: Install core ${{ matrix.core }}
         run: |
-          arduino-cli core install "${{ matrix.core }}" \
-            --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core install "${{ matrix.core }}"             --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
 
-      # The repository root is exposed as a library so the examples can
+      # The repository root is exposed as a library so the sketch can
       # #include "AudioDatasetRecorder.h" without copying anything.
-      - name: Compile ${{ matrix.example }} for ${{ matrix.fqbn }}
+      - name: Compile ${{ matrix.sketch }}
         run: |
           set -euo pipefail
-          arduino-cli compile \
-            --fqbn "${{ matrix.fqbn }}" \
-            --warnings all \
-            --library "$(pwd)" \
-            "examples/${{ matrix.example }}"
+          arduino-cli compile             --fqbn "${{ matrix.fqbn }}"             --warnings all             --library "$(pwd)"             "${{ matrix.sketch }}"
 
   example-guards:
     name: Example self-consistency

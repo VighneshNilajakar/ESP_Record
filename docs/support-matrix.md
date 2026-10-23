@@ -2,8 +2,8 @@
 
 This project aims to work on as many ESP-family boards as it honestly can, which
 is **not** the same as claiming one sketch works everywhere. What follows is what
-is actually evidenced. Rows marked *not validated* compile but have never been
-run on the board by this project.
+is actually evidenced. Every row not marked **Verified on hardware** compiles
+but has never been run on that board by this project.
 
 ## What the two automated gates prove
 
@@ -32,11 +32,11 @@ running on.
 | Board | SoC | Audio | Storage | Strategy | Status |
 |---|---|---|---|---|---|
 | AI-Thinker ESP32-CAM | ESP32 | INMP441, I2S | on-board SD_MMC, 1-bit | Full buffer | **Verified on hardware** (see measurements below) |
-| Generic ESP32 DevKit | ESP32 | I2S or PDM | SPI microSD | Streaming | Compile-tested on `esp32dev`, 2.x and 3.x |
-| ESP32-S3 | ESP32-S3 | I2S or PDM | SPI microSD | Streaming | Compile-tested on `esp32-s3-devkitc-1`, core 3.x |
-| ESP32-C3 | ESP32-C3 | I2S or PDM | SPI microSD | Streaming | Compile-tested on `esp32-c3-devkitm-1`. Single I2S controller |
-| ESP32-S2 | ESP32-S2 | I2S | SPI microSD | Streaming | Compile-tested on `esp32-s2-saola-1` |
-| ESP32-C6 | ESP32-C6 | I2S or PDM | SPI microSD | Streaming | Compile-tested on `esp32-c6-devkitc-1` |
+| Generic ESP32 DevKit | ESP32 | I2S or PDM | SPI microSD | Streaming | Compile-tested as `esp32:esp32:esp32` (ESP32 Dev Module), 2.x and 3.x |
+| ESP32-S3 | ESP32-S3 | I2S or PDM | SPI microSD | Streaming | Compile-tested on `esp32s3`, core 3.x |
+| ESP32-C3 | ESP32-C3 | I2S or PDM | SPI microSD | Streaming | Adapter set compiles for `esp32c3`; no runnable sketch yet |
+| ESP32-S2 | ESP32-S2 | I2S | SPI microSD | Streaming | Adapter set compiles for `esp32s2`; no runnable sketch yet |
+| ESP32-C6 | ESP32-C6 | I2S or PDM | SPI microSD | Streaming | Adapter set compiles for `esp32c6`; no runnable sketch yet |
 
 ### ESP32-CAM bring-up measurements (2026-10)
 
@@ -55,6 +55,11 @@ FQBN `esp32:esp32:esp32cam`, SD_MMC in 1-bit mode, 16 kHz mono PCM16.
 | SD mount | One 16 GB card timed out with `sdmmc_init_ocr: send_op_cond ... 0x107`; a second card mounted normally, so that failure was card-specific |
 | SD write current | At the default 20 MHz clock the first write triggered the brownout detector; at 4 MHz the same 160 KB write completed |
 | Reset lines | DTR/RTS are not wired on this setup: the board cannot be reset into the bootloader by the adapter |
+
+The WAV writer was also cross-checked on the PC: files it produced were opened
+with Python's standard `wave` module at one frame, 80000 frames mono at 16 kHz
+and 1000 frames stereo at 44.1 kHz, and header fields and frame counts matched
+every time. That checks the format, not the audio.
 
 Two of these are firmware-relevant beyond this board. The slot result contradicts
 the INMP441 datasheet's L/R=GND => left channel, so the example defaults to the
