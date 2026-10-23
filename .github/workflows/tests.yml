@@ -115,7 +115,7 @@ jobs:
         with:
           path: |
             ~/.cache/arduino
-            ~/Arduino
+            ~/.arduino15
           key: arduino-${{ matrix.core }}-${{ matrix.fqbn }}
 
       - name: Install arduino-cli
@@ -126,7 +126,9 @@ jobs:
           arduino-cli version
 
       - name: Install core ${{ matrix.core }}
-        run: arduino-cli core install --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+        run: |
+          arduino-cli core install "${{ matrix.core }}" \
+            --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
 
       # The repository root is exposed as a library so the examples can
       # #include "AudioDatasetRecorder.h" without copying anything.
