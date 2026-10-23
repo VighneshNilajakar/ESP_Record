@@ -12,6 +12,11 @@ but has never been run on that board by this project.
 | Host tests (`g++ -Werror`, 442 checks) | The portable core is warning-free and logically correct on a host compiler | Anything about a chip, a peripheral, or a pin |
 | Board compiles (`arduino-cli`, matrix in `.github/workflows/tests.yml`) | Each declared board/core/example combination builds | That audio is captured correctly |
 
+The seven PlatformIO environments in `platformio.ini` also build locally:
+espressif32 6.5.0 for the 2.x rows and pioarduino 54.3.20 (Arduino-ESP32 3.2.0)
+for the 3.x rows. That is a second toolchain, not a second gate: it proves the
+same thing the arduino-cli matrix proves.
+
 Correctness on hardware is tracked by hand in
 [hardware-checklist.md](hardware-checklist.md). No claim below outruns those
 three sources of evidence.

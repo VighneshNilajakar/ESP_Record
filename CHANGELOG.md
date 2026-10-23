@@ -117,6 +117,24 @@ The CI matrix also named four boards by their PlatformIO identifiers
 now compile the adapter set from `tests/board/AdapterCompileCheck` instead of a
 sketch whose GPIO numbers cannot exist on those chips.
 
+### Fixed in the PlatformIO configuration
+
+`platformio.ini` had never been run, and could not have built anything. Seven
+environments now build: `esp32cam_core2`, `esp32dev_core2`, `esp32dev_core3`,
+`esp32_s3_core3`, and the C3, S2 and C6 adapter checks. The 2.x environments use
+espressif32 6.5.0; the 3.x ones use pioarduino 54.3.20, which ships
+Arduino-ESP32 3.2.0, a newer core than the CI matrix tests.
+
+- `src_dir` is a project-level option. Inside `[env:...]` PlatformIO ignores it
+  with a warning, so the file built the library's `src/` as if it were the
+  sketch and failed to link `setup()`. Each environment now names its sketch in
+  `custom_example`, and `tools/pio_select_example.py` rewrites
+  `PROJECT_SRC_DIR` at build time.
+- `lib_extra_dirs` and `extra_scripts` are `[env]` options; in `[platformio]`
+  they are silently unknown. The repository root is now an extra library
+  directory, which is what compiles the shared sources and puts their headers on
+  the include path.
+
 ### Changed by the first hardware measurements
 
 - The reference ESP32-CAM profile now reads the **right** I2S slot. With L/R
