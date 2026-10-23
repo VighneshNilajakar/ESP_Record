@@ -10,11 +10,13 @@ Status LegacyI2sAudioSource::begin(const AudioFormat &format, SampleSlot slot) {
     if (bclk_ < 0 || ws_ < 0 || data_ < 0) return Status::InvalidConfig;
     if (format.sampleRateHz == 0) return Status::InvalidConfig;
 
-    i2s_config_t config;
+    /* Value-initialised: 2.x's i2s_config_t has fields (mclk_multiple,
+     * bits_per_chan) that this adapter does not set, and leaving them
+     * uninitialised feeds stack garbage to the driver. */
+    i2s_config_t config = {};
     config.mode = static_cast<i2s_mode_t>(I2S_MODE_MASTER | I2S_MODE_RX);
     config.sample_rate = format.sampleRateHz;
     config.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT;
-    config.channel_format = I2S_CHANNEL_FMT_ALL;
     config.communication_format = I2S_COMM_FORMAT_I2S;
     config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
     config.dma_buf_count = dmaBufCount_;
@@ -23,8 +25,8 @@ Status LegacyI2sAudioSource::begin(const AudioFormat &format, SampleSlot slot) {
     config.tx_desc_auto_clear = false;
     config.fixed_mclk = 0;
 
-if (format.channels >= 2) {
-        config.channel_format = I2S_CHANNEL_FMT_ALL;
+    if (format.channels >= 2) {
+        config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
         wordsPerFrame_ = 2;
     } else if (slot == SampleSlot::Right) {
         config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;

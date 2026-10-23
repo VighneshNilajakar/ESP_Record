@@ -58,7 +58,21 @@ public:
 
 protected:
     explicit FsStorageBase() : mounted_(false) {}
-    virtual FS &backend() = 0;
+
+    /* Returns a mutable reference even from a const object: the underlying
+     * filesystem operations (open, exists, remove) are non-const, and a storage
+     * backend that could not mutate through a const handle would be useless. */
+    virtual FS &backend() const = 0;
+
+    /*
+     * Capacity is asked of the concrete bus rather than of fs::FS.
+     *
+     * Core 2.x does not declare totalBytes()/usedBytes() on fs::FS at all; they
+     * exist only on SDMMCFS and SDFS. Core 3.x does declare them on FS. Routing
+     * through the subclass is the only form that compiles against both.
+     */
+    virtual uint64_t backendTotalBytes() const = 0;
+    virtual uint64_t backendUsedBytes() const = 0;
 
     /* Guard used by every operation so a caller that skipped begin() gets a
      * clear error instead of a filesystem-level fault. */

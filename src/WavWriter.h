@@ -88,6 +88,8 @@ public:
     ByteArrayPrint(uint8_t *buffer, size_t capacity)
         : buffer_(buffer), capacity_(capacity), written_(0), lastWriteShort_(false) {}
 
+    size_t write(uint8_t value) { return write(&value, 1); }
+
     size_t write(const uint8_t *data, size_t length) {
         if (buffer_ == nullptr || data == nullptr) return 0;
         if (written_ + length > capacity_) {

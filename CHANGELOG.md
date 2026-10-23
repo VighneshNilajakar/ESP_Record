@@ -55,6 +55,42 @@ All notable changes to this project are documented here.
   into a different, valid one. It is now rejected.
 - Writers are deleted on every controller path, including failures.
 
+### Fixed during hardware bring-up
+
+These only surface when the code is actually compiled by Arduino-ESP32 and run,
+which is why the CI board matrix was added alongside them.
+
+- `ArduinoLogger::log` printed no line terminator, so the banner, `STATUS` and
+  every other message ran together into one unreadable line on the serial
+  console.
+- `ByteArrayPrint` did not implement `Print::write(uint8_t)`, which is pure
+  virtual in the real Arduino `Print`. The host stub had omitted it, so the
+  host tests could not catch this; the stub now mirrors the real interface.
+- `PsramFirstAllocator` called a non-existent `heap_caps_get_free_block` with a
+  non-existent `ESP_HEAP_CAP_SPIRAM`. The real API is
+  `heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)`.
+- `LegacyI2sAudioSource` used `I2S_CHANNEL_FMT_ALL`, which does not exist;
+  stereo is `I2S_CHANNEL_FMT_RIGHT_LEFT`. Its `i2s_config_t` was also left
+  partially uninitialised, feeding stack garbage for `mclk_multiple` and
+  `bits_per_chan`.
+- `FsStorageBase` asked `fs::FS` for `totalBytes()`/`freeBytes()`, neither of
+  which exists on core 2.x (`totalBytes`/`usedBytes` live on `SDMMCFS`/`SDFS`).
+  Capacity is now obtained from the concrete bus.
+- The examples used `AudioPinMap` unqualified although it lives in
+  `AudioDatasetRecorder::profiles`.
+
+### Changed by the first hardware measurements
+
+- The reference ESP32-CAM profile now reads the **right** I2S slot. With L/R
+  tied to GND the left slot read digital silence on the reference board, while
+  the right slot carried the signal. `ADR_I2S_SLOT_RIGHT=0` restores the old
+  behaviour.
+- The PCM alignment default moved from a right shift of 14 to 16. The INMP441
+  is MSB-aligned in a 32-bit slot, and 14 clipped 571 of 80000 frames.
+- `SdMmcStorage::configure` accepts an SDMMC clock in kHz. At the 20 MHz default
+  the first write browned out the reference board; 4 MHz completed the same
+  write. The example exposes this as `ADR_SD_FREQUENCY_KHZ`.
+
 ### Changed
 
 - `AudioStats` gained `sum`, `mean()` and `normalizedMean()` for DC-offset

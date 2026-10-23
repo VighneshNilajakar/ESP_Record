@@ -94,8 +94,8 @@ static ArduinoLogger g_log(Serial);
 static StreamTransport g_transport(Serial);
 static SerialProgressSink g_progress(Serial);
 
-static const AudioPinMap kI2sPins = profiles::kGenericEsp32S3;
-static const AudioPinMap kPdmPins = profiles::kGenericEsp32S3Pdm;
+static const profiles::AudioPinMap kI2sPins = profiles::kGenericEsp32S3;
+static const profiles::AudioPinMap kPdmPins = profiles::kGenericEsp32S3Pdm;
 
 static RecorderController g_recorder(g_audio, g_storage, g_indicator, g_clock, g_memory, g_log);
 static CommandConsole g_console(g_recorder, g_transport, g_log);

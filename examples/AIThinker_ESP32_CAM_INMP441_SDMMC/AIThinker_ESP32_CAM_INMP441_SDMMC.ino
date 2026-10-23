@@ -60,16 +60,44 @@ using namespace AudioDatasetRecorder::adapters;
 
 /*
  * Alignment between the INMP441's raw 24-bit sample and PCM16, for a 32-bit
- * I2S slot. 14 matches the working setup. It is a tuning parameter for this
- * microphone and this peripheral configuration, not an INMP441 constant: check
- * the recorded levels with tools/analyze_wav.py before changing it.
+ * I2S slot.
+ *
+ * The microphone delivers 24-bit data MSB-aligned in the 32-bit slot, so
+ * reducing to 16 bits is a shift of 16: the top 16 bits are the sample, and
+ * anything smaller multiplies the gain. 14 was carried over from the earlier
+ * sketch without measurement; on the reference board it produced peak 32768
+ * with 571 clipped frames in a 5 s clip. 16 keeps the same recording at about
+ * a quarter of the amplitude with no clipping.
+ *
+ * This is a property of the microphone and the slot width, not a tuning knob
+ * to raise the level. Verify with the peak/rms printed after RECORD, or with
+ * tools/analyze_wav.py, before changing it.
  */
 #ifndef ADR_I2S_PCM_RIGHT_SHIFT
-#define ADR_I2S_PCM_RIGHT_SHIFT 14
+#define ADR_I2S_PCM_RIGHT_SHIFT 16
 #endif
 
 #ifndef ADR_RECORDING_LED_PIN
 #define ADR_RECORDING_LED_PIN 4
+#endif
+
+/*
+ * Which I2S slot the microphone drives.
+ *
+ * The datasheet says an INMP441 with L/R tied to GND puts its data in the left
+ * slot, and that is what the comment in older revisions of this sketch assumed.
+ * It is not what this hardware does. Measured on the reference board with
+ * Arduino-ESP32 2.0.14: asserting L/R to GND still delivered the signal in the
+ * RIGHT slot (peak ~140e6 raw, i.e. ~26% of full scale), while the left slot
+ * read exactly zero for every frame. Capturing "successfully" while recording
+ * digital silence is the failure mode this setting exists to prevent.
+ *
+ * Default is therefore Right for this profile. If your unit really does drive
+ * the left slot, build with -DADR_I2S_SLOT_RIGHT=0 and check the reported peak
+ * is non-zero before trusting a recording.
+ */
+#ifndef ADR_I2S_SLOT_RIGHT
+#define ADR_I2S_SLOT_RIGHT 1
 #endif
 
 #ifndef ADR_RECORDING_LED_ON_LEVEL
@@ -78,6 +106,16 @@ using namespace AudioDatasetRecorder::adapters;
 
 #ifndef ADR_SD_MOUNT_POINT
 #define ADR_SD_MOUNT_POINT "/sdcard"
+#endif
+
+/*
+ * SDMMC clock in kHz; 0 keeps the board default (20 MHz). Drop to 4000 if the
+ * card browns out the board the moment it starts writing. That is the usual
+ * symptom of a 3.3 V rail with too little bulk capacitance, so lowering the
+ * clock is a stopgap, not a fix.
+ */
+#ifndef ADR_SD_FREQUENCY_KHZ
+#define ADR_SD_FREQUENCY_KHZ 0
 #endif
 
 static_assert(ADR_RECORD_SECONDS > 0, "ADR_RECORD_SECONDS must be positive");
@@ -94,7 +132,7 @@ static ArduinoLogger g_log(Serial);
 static StreamTransport g_transport(Serial);
 static SerialProgressSink g_progress(Serial);
 
-static const AudioPinMap kPins = profiles::kAiThinkerEsp32CamInmp441;
+static const profiles::AudioPinMap kPins = profiles::kAiThinkerEsp32CamInmp441;
 
 static RecorderController g_recorder(g_audio, g_storage, g_indicator, g_clock, g_memory, g_log);
 static CommandConsole g_console(g_recorder, g_transport, g_log);
@@ -109,7 +147,7 @@ void setup() {
     g_audio.configurePort(I2S_NUM_0);
     g_audio.configureDma(8, 256);
 #endif
-    g_storage.configure(ADR_SD_MOUNT_POINT, /* oneBit */ true);
+    g_storage.configure(ADR_SD_MOUNT_POINT, /* oneBit */ true, ADR_SD_FREQUENCY_KHZ);
 
     const Status indicatorStatus =
         g_indicator.begin(ADR_RECORDING_LED_PIN, ADR_RECORDING_LED_ON_LEVEL == HIGH, false);
@@ -121,7 +159,7 @@ void setup() {
     config.sampleRateHz = ADR_SAMPLE_RATE_HZ;
     config.channels = 1;
     config.durationSeconds = ADR_RECORD_SECONDS;
-    config.slot = SampleSlot::Left;  /* L/R tied to GND on the INMP441 */
+    config.slot = ADR_I2S_SLOT_RIGHT ? SampleSlot::Right : SampleSlot::Left;
     config.rightShift = ADR_I2S_PCM_RIGHT_SHIFT;
     config.strategy = CaptureStrategy::FullBuffer;
     config.minFreeBytesMargin = 64u * 1024u;

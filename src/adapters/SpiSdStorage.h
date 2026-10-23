@@ -58,7 +58,9 @@ public:
     const char *name() const { return "spi_sd"; }
 
 protected:
-    FS &backend() { return SD; }
+    FS &backend() const { return SD; }
+    uint64_t backendTotalBytes() const { return SD.totalBytes(); }
+    uint64_t backendUsedBytes() const { return SD.usedBytes(); }
 
 private:
     int8_t csPin_;

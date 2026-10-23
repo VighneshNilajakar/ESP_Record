@@ -20,7 +20,7 @@ three sources of evidence.
 
 | Arduino-ESP32 core | I2S API used | Adapter | Status |
 |---|---|---|---|
-| 2.x | `driver/i2s.h` | `LegacyI2sAudioSource` | **Reference.** User-observed successful save on ESP32-CAM |
+| 2.x | `driver/i2s.h` | `LegacyI2sAudioSource` | **Verified on hardware** (ESP32-CAM, capture + byte-exact save) |
 | 3.x | `ESP_I2S.h` | `EspI2sAudioSource`, `PdmI2sAudioSource` | Compile-tested only |
 
 The two APIs are incompatible, so the adapter is chosen at compile time in
@@ -31,12 +31,36 @@ running on.
 
 | Board | SoC | Audio | Storage | Strategy | Status |
 |---|---|---|---|---|---|
-| AI-Thinker ESP32-CAM | ESP32 | INMP441, I2S | on-board SD_MMC, 1-bit | Full buffer | **Reference.** User reports a successful save. Not CI-verified on hardware |
+| AI-Thinker ESP32-CAM | ESP32 | INMP441, I2S | on-board SD_MMC, 1-bit | Full buffer | **Verified on hardware** (see measurements below) |
 | Generic ESP32 DevKit | ESP32 | I2S or PDM | SPI microSD | Streaming | Compile-tested on `esp32dev`, 2.x and 3.x |
 | ESP32-S3 | ESP32-S3 | I2S or PDM | SPI microSD | Streaming | Compile-tested on `esp32-s3-devkitc-1`, core 3.x |
 | ESP32-C3 | ESP32-C3 | I2S or PDM | SPI microSD | Streaming | Compile-tested on `esp32-c3-devkitm-1`. Single I2S controller |
 | ESP32-S2 | ESP32-S2 | I2S | SPI microSD | Streaming | Compile-tested on `esp32-s2-saola-1` |
 | ESP32-C6 | ESP32-C6 | I2S or PDM | SPI microSD | Streaming | Compile-tested on `esp32-c6-devkitc-1` |
+
+### ESP32-CAM bring-up measurements (2026-10)
+
+Recorded on the reference board so that later changes have something concrete to
+disagree with. Chip: ESP32-D0WDQ6-V3 (revision v3.1), Arduino-ESP32 2.0.14,
+FQBN `esp32:esp32:esp32cam`, SD_MMC in 1-bit mode, 16 kHz mono PCM16.
+
+| Observation | Result |
+|---|---|
+| Capture timing | 80000/80000 frames in 5008 ms (5 s at 16 kHz) |
+| Save | 160044-byte WAV written, verified, and listed by `LIST` |
+| I2S slot | Data appears in the **right** slot although INMP441 L/R was tied to GND; the left slot read exactly `0` for every frame |
+| Data pin | GPIO12 is the live data line. A scan of 12/13/2/4 found signal only on 12 |
+| Alignment | 24-bit data is MSB-aligned in the 32-bit slot, so the correct 16-bit reduction is a right shift of 16 |
+| Gain at shift 14 | peak 32768, 571 of 80000 frames clipped |
+| SD mount | One 16 GB card timed out with `sdmmc_init_ocr: send_op_cond ... 0x107`; a second card mounted normally, so that failure was card-specific |
+| SD write current | At the default 20 MHz clock the first write triggered the brownout detector; at 4 MHz the same 160 KB write completed |
+| Reset lines | DTR/RTS are not wired on this setup: the board cannot be reset into the bootloader by the adapter |
+
+Two of these are firmware-relevant beyond this board. The slot result contradicts
+the INMP441 datasheet's L/R=GND => left channel, so the example defaults to the
+right slot and exposes `ADR_I2S_SLOT_RIGHT` to override it. The brownout is a
+supply problem: a 4 MHz SD clock is a stopgap, and the real fix is 100-470 uF of
+bulk capacitance close to the board.
 
 ### Known constraints that are not negotiable
 

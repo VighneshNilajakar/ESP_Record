@@ -24,17 +24,29 @@ namespace adapters {
  */
 class SdMmcStorage : public FsStorageBase {
 public:
-    SdMmcStorage() : mountpoint_("/sdcard"), oneBit_(true) {}
+    SdMmcStorage() : mountpoint_("/sdcard"), oneBit_(true), frequencyKhz_(0) {}
 
-    /* mountpoint must outlive this object. */
-    void configure(const char *mountpoint, bool oneBit) {
+    /*
+     * mountpoint must outlive this object.
+     *
+     * frequencyKhz is the SDMMC clock in kHz; 0 keeps the board default
+     * (BOARD_MAX_SDMMC_FREQ, 20 MHz on classic ESP32). Lowering it reduces
+     * peak current and can rescue a marginal 3.3 V rail or a long cable, at
+     * the cost of write throughput. This is a genuine trade-off, not a way to
+     * paper over a brownout: if the rail collapses even at 4 MHz, the supply
+     * needs bulk capacitance.
+     */
+    void configure(const char *mountpoint, bool oneBit, int frequencyKhz = 0) {
         mountpoint_ = mountpoint;
         oneBit_ = oneBit;
+        frequencyKhz_ = frequencyKhz;
     }
 
     Status begin() {
         if (mounted_) return Status::Ok;
-        mounted_ = SD_MMC.begin(mountpoint_, oneBit_);
+        mounted_ = frequencyKhz_ > 0
+                       ? SD_MMC.begin(mountpoint_, oneBit_, false, frequencyKhz_)
+                       : SD_MMC.begin(mountpoint_, oneBit_);
         if (!mounted_) return Status::StorageBeginFailed;
         /* A successful begin() with no card means the bus is unusable, not
          * that the card is empty. */
@@ -55,11 +67,14 @@ public:
     const char *name() const { return oneBit_ ? "sd_mmc-1bit" : "sd_mmc-4bit"; }
 
 protected:
-    FS &backend() { return SD_MMC; }
+    FS &backend() const { return SD_MMC; }
+    uint64_t backendTotalBytes() const { return SD_MMC.totalBytes(); }
+    uint64_t backendUsedBytes() const { return SD_MMC.usedBytes(); }
 
 private:
     const char *mountpoint_;
     bool oneBit_;
+    int frequencyKhz_;
 };
 
 }  // namespace adapters

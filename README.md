@@ -42,16 +42,26 @@ observed successful save, and it carries the most pin constraints. Its wiring:
 | SCK/BCLK | GPIO14 | shared with SD_MMC CLK |
 | WS/LRCL | GPIO15 | shared with SD_MMC CMD |
 | SD/DOUT | GPIO12 | boot-strapping pin, and SD DAT2 |
-| L/R | GND | left slot |
+| L/R | GND | datasheet says left slot; measured right on the reference board |
 
 Read [docs/hardware.md](docs/hardware.md) before changing pins. GPIO14/15 are
 shared with SD_MMC, GPIO12 is a boot-strapping pin, and GPIO4 is both the flash
 LED and part of the SD bus. That is why the reference captures to PSRAM, releases
 I2S, and only then mounts the card.
 
-The GPIO12 placement was arrived at by the user reporting a successful save after
-moving DOUT there from GPIO13. Treat that as an observed workaround on one board
-revision, **not** a recommendation.
+The GPIO12 placement came from moving DOUT there from GPIO13 and observing a
+successful save. Treat it as an observed workaround on one board revision,
+**not** a recommendation.
+
+The reference board was brought up on Arduino-ESP32 2.0.14: capture reported
+80000/80000 frames in 5008 ms and a 160044-byte WAV was written and listed. Two
+results from that run contradict the obvious reading of the datasheet, and both
+are configurable at build time: the microphone delivered its data in the right
+I2S slot even with L/R tied to GND (`ADR_I2S_SLOT_RIGHT`), and SD writes browned
+out the board at the default 20 MHz clock but completed at 4 MHz
+(`ADR_SD_FREQUENCY_KHZ`). The clock is a stopgap; the real fix is bulk
+capacitance on the 5 V rail. See
+[docs/support-matrix.md](docs/support-matrix.md) for the measurements.
 
 ## Install
 
@@ -100,8 +110,7 @@ Edit the `#define`s at the top of the example, or pass build flags:
 
 ```cpp
 #define ADR_RECORD_SECONDS 20        // 60 s needs ~1.9 MB of PSRAM at 16 kHz
-#define ADR_I2S_PCM_RIGHT_SHIFT 14   // smaller = more gain
-#define ADR_I2S_PCM_RIGHT_SHIFT 16   // quieter; check the clipping report
+#define ADR_I2S_PCM_RIGHT_SHIFT 16   // 24-bit data MSB-aligned in a 32-bit slot
 #define ADR_MIC_BCLK_PIN 14
 #define ADR_MIC_WS_PIN 15
 #define ADR_MIC_DATA_PIN 12

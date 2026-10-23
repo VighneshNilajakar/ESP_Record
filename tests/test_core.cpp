@@ -15,6 +15,7 @@ namespace {
 class MemoryPrint : public Print {
 public:
     explicit MemoryPrint(size_t capacity) : limit_(capacity) {}
+    size_t write(uint8_t value) { return write(&value, 1); }
     size_t write(const uint8_t *data, size_t length) {
         const size_t accepted = length < limit_ ? length : limit_;
         for (size_t i = 0; i < accepted; ++i) bytes.push_back(data[i]);

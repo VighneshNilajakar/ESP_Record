@@ -45,7 +45,9 @@ public:
  * Serial and so tests can capture output.
  *
  * Implementations must accept the same format strings as printf and must not
- * crash on a null pointer argument.
+ * crash on a null pointer argument. One call is one complete line: the
+ * implementation is responsible for the line terminator, and the format
+ * strings deliberately carry none.
  */
 class ILogger {
 public:

@@ -162,12 +162,14 @@ Status FsStorageBase::createWriter(const char *path, const char *partialPath, IF
 
 uint64_t FsStorageBase::totalBytes() const {
     if (!mounted_) return 0;
-    return static_cast<uint64_t>(backend().totalBytes());
+    return backendTotalBytes();
 }
 
 uint64_t FsStorageBase::freeBytes() const {
     if (!mounted_) return 0;
-    return static_cast<uint64_t>(backend().freeBytes());
+    const uint64_t total = backendTotalBytes();
+    const uint64_t used = backendUsedBytes();
+    return used >= total ? 0 : total - used;
 }
 
 }  // namespace adapters

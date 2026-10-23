@@ -23,7 +23,19 @@ void ArduinoLogger::log(const char *format, ...) {
     const int written = vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
     if (written <= 0) return;
+
+    const size_t length = static_cast<size_t>(written) < sizeof(buffer)
+                              ? static_cast<size_t>(written)
+                              : sizeof(buffer) - 1;
+
+    /*
+     * Terminate the record here. The core formats one line per call and the
+     * messages carry no line ending of their own, so without this every banner
+     * and STATUS line runs into the next one. CRLF rather than LF because a
+     * bare line feed does not return the carriage on a plain terminal.
+     */
     stream_.print(buffer);
+    if (length == 0 || buffer[length - 1] != '\n') stream_.print("\r\n");
 }
 
 PsramFirstAllocator::PsramFirstAllocator() : usePsram_(psramFound()) {}
@@ -45,10 +57,12 @@ void PsramFirstAllocator::release(void *pointer) {
 
 size_t PsramFirstAllocator::largestPsramBlock() const {
     if (!usePsram_) return 0;
-    return heap_caps_get_free_block(ESP_HEAP_CAP_SPIRAM);
+    return heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
 }
 
-size_t PsramFirstAllocator::largestHeapBlock() const { return heap_caps_get_free_block(MALLOC_CAP_8BIT); }
+size_t PsramFirstAllocator::largestHeapBlock() const {
+    return heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+}
 
 size_t PsramFirstAllocator::largestFreeBlock() const {
     const size_t psram = largestPsramBlock();
