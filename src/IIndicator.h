@@ -10,7 +10,9 @@ namespace AudioDatasetRecorder {
  *
  * The core guarantees that allOff() is called on every exit path from a
  * recording, including failures, so a recorder can never leave an LED stuck on
- * and draining the board.
+ * and draining the board. setSuccess() is a momentary indication: implementations
+ * must be inactive when it returns. A single pin cannot show idle and error
+ * separately, so setIdle() and setError() both end inactive.
  */
 class IIndicator {
 public:
@@ -20,6 +22,7 @@ public:
 
     virtual void setIdle() = 0;
     virtual void setRecording() = 0;
+    /* May blink or pulse; must end inactive. */
     virtual void setSuccess() = 0;
     virtual void setError() = 0;
     virtual void allOff() = 0;

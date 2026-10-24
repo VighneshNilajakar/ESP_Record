@@ -84,6 +84,24 @@ pass `--library` (that would compile every source twice):
 arduino-cli compile --fqbn esp32:esp32:esp32cam .
 ```
 
+The LED is on continuously while recording, blinks three times after a
+successful SAVE, and is off the rest of the time.
+
+### Configure with .env
+
+The board cannot read a file at run time, so `.env` is resolved at build time:
+
+```
+copy .env.example .env
+# edit duration, sample rate, GPIO pins, SD clock, baud
+python tools/gen_config.py
+arduino-cli compile --fqbn esp32:esp32:esp32cam .
+```
+
+`tools/gen_config.py` validates every value and writes a gitignored `config.h`
+next to the sketch. Delete `config.h` to return to the defaults compiled into
+the sketch; CI builds without it, so the defaults stay tested.
+
 ## Install
 
 Copy this repository into your Arduino libraries directory, or install the ZIP via

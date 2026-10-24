@@ -34,13 +34,19 @@ All notable changes to this project are documented here.
 - `esp-audio-dataset-recorder.ino` in the repository root: the reference board
   as a single ready-to-flash sketch, including the 4 MHz SDMMC setting and a
   boot-time brownout report. It builds in place without `--library`.
+- `.env` build configuration for that sketch: `tools/gen_config.py` validates
+  duration, sample rate, I2S slot and shift, GPIO pins, SD clock, mount point and
+  baud, then writes a gitignored `config.h`. `.env.example` documents the
+  reference values; an unknown key or duplicate/input-only pin is an error.
+- A grouped `COMMAND MENU` printed at boot and on `HELP`, and a sectioned
+  `STATUS` report (capture, storage, last capture).
 - `platformio.ini` and a CI board-compile matrix via `arduino-cli`.
 - `docs/support-matrix.md` and `docs/hardware-checklist.md`.
 - `keywords.txt` for Arduino IDE highlighting.
-- Host tests: 442 checks over the utilities, converter, controller and console,
+- Host tests: 445 checks over the utilities, converter, controller and console,
   driven by in-memory fakes. No hardware, no test framework dependency.
-- Python tests: 21 checks over the WAV tool, including RIFF header
-  cross-validation, truncation and trailing-byte detection.
+- Python tests: 31 checks over the WAV tool and the `.env` generator, including
+  RIFF header cross-validation, truncation and config validation.
 
 ### Fixed
 
@@ -57,6 +63,13 @@ All notable changes to this project are documented here.
 - An over-long console line was silently truncated, turning a mistyped label
   into a different, valid one. It is now rejected.
 - Writers are deleted on every controller path, including failures.
+- ROM boot-log bytes (74880 baud) arriving at 115200 were parsed as a garbage
+  command and printed an `unknown command` banner on every reset. Non-printable
+  lines are now dropped.
+- `GpioIndicator::setSuccess()` drove the LED on and never released it, so the
+  flash LED stayed lit after `SAVE` until the next recording finished. It now
+  blinks three times after the card has been unmounted and ends off, and every
+  write re-asserts `pinMode()` because SD_MMC reconfigures GPIO4.
 
 ### Fixed during hardware bring-up
 

@@ -353,6 +353,8 @@ void testFullBufferHappyPath() {
     ADR_CHECK(controller.savePending() == Status::Ok);
     ADR_CHECK(!controller.hasPending());
     ADR_CHECK(storage.has("/hey_hotpin.001.wav"));
+    /* A successful save turns the LED off again (via setSuccess ending off). */
+    ADR_CHECK_EQ(indicator.successCalls, 1);
 
     std::map<std::string, std::vector<uint8_t> >::const_iterator it =
         storage.files.find("/hey_hotpin.001.wav");

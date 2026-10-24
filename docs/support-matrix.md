@@ -9,7 +9,7 @@ but has never been run on that board by this project.
 
 | Gate | Proves | Does not prove |
 |---|---|---|
-| Host tests (`g++ -Werror`, 442 checks) | The portable core is warning-free and logically correct on a host compiler | Anything about a chip, a peripheral, or a pin |
+| Host tests (`g++ -Werror`, 445 checks) | The portable core is warning-free and logically correct on a host compiler | Anything about a chip, a peripheral, or a pin |
 | Board compiles (`arduino-cli`, matrix in `.github/workflows/tests.yml`) | Each declared board/core/example combination builds | That audio is captured correctly |
 
 The seven PlatformIO environments in `platformio.ini` also build locally:

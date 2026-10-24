@@ -5,7 +5,8 @@ namespace profiles {
 
 /*
  * AI-Thinker ESP32-CAM + INMP441 + on-board SD_MMC.
- * BCLK GPIO14, WS GPIO15, DOUT GPIO12, L/R tied to GND (left slot).
+ * BCLK GPIO14, WS GPIO15, DOUT GPIO12, L/R tied to GND. Despite the
+ * datasheet, this board delivers samples in the right slot (measured).
  * See the header for why these three pins are a constrained set.
  */
 const AudioPinMap kAiThinkerEsp32CamInmp441(14, 15, 12);

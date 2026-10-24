@@ -25,6 +25,12 @@ bool cleanLine(const char *line, char *out, size_t outCapacity) {
     for (size_t i = start; line[i] != '\0'; ++i) {
         const char c = line[i];
         if (c == '\r' || c == '\n') continue;
+        /* The ESP32 ROM prints its boot log at 74880 baud, so a monitor at
+         * 115200 receives it as bytes outside printable ASCII. Treating that
+         * as a command produced a large "unknown command" banner on every
+         * reset; drop the whole line instead. Labels are ASCII by definition. */
+        const unsigned char byte = static_cast<unsigned char>(c);
+        if ((byte < 0x20 && c != '\t') || byte > 0x7e) return false;
         if (written + 1 < outCapacity) out[written++] = c;
     }
     while (written > 0 && isSpaceChar(out[written - 1])) --written;
@@ -209,24 +215,37 @@ void CommandConsole::handleLine(const char *line) {
 
 void CommandConsole::printBanner() const {
     log_.log("");
-    log_.log("AudioDatasetRecorder ready. Type HELP for commands.");
-    log_.log("Commands: RECORD <label>, SAVE, DISCARD, LIST, STATUS, HELP");
+    log_.log("------------------------------------------------------------");
+    log_.log(" AudioDatasetRecorder ready: %u s clips",
+             static_cast<unsigned>(recorder_.config().durationSeconds));
+    log_.log(" Type HELP to show the command menu.");
+    log_.log("------------------------------------------------------------");
     log_.log("");
 }
 
 void CommandConsole::showHelp() const {
     log_.log("");
-    log_.log("Commands:");
-    log_.log("  RECORD <label>   capture %u seconds and hold it for SAVE",
+    log_.log("============================================================");
+    log_.log(" COMMAND MENU");
+    log_.log("============================================================");
+    log_.log(" Capture");
+    log_.log("   RECORD <label>   record %u s into RAM (no card needed)",
              static_cast<unsigned>(recorder_.config().durationSeconds));
-    log_.log("  SAVE             write the pending clip to the card");
-    log_.log("  DISCARD          drop the pending clip without writing it");
-    log_.log("  LIST             list recorded WAV files");
-    log_.log("  STATUS           configuration, memory and storage state");
-    log_.log("  HELP             this list");
+    log_.log("   DISCARD          drop the pending clip without writing it");
     log_.log("");
-    log_.log("Labels: 1-%u characters of a-z A-Z 0-9 _ -", static_cast<unsigned>(kMaxLabelLength));
-    log_.log("Examples: RECORD hey_hotpin, RECORD noise, RECORD unknown");
+    log_.log(" Files");
+    log_.log("   SAVE             write the pending clip to the SD card");
+    log_.log("   LIST             list WAV files on the card");
+    log_.log("");
+    log_.log(" Info");
+    log_.log("   STATUS           configuration, card and last capture");
+    log_.log("   HELP             this menu");
+    log_.log("------------------------------------------------------------");
+    log_.log(" Labels   1-%u characters: A-Z a-z 0-9 _ -",
+             static_cast<unsigned>(kMaxLabelLength));
+    log_.log(" Files    <label>.<3 digits>.wav, numbered from 001 per label");
+    log_.log(" Example  RECORD hey_hotpin");
+    log_.log("============================================================");
     log_.log("");
 }
 
@@ -236,36 +255,50 @@ void CommandConsole::showStatus() const {
         static_cast<uint64_t>(config.sampleRateHz) * config.durationSeconds);
 
     log_.log("");
-    log_.log("STATUS");
-    log_.log("  format      %u Hz, %u channel(s), PCM16", static_cast<unsigned>(config.sampleRateHz),
+    log_.log("============================================================");
+    log_.log(" STATUS");
+    log_.log("============================================================");
+    log_.log(" Capture");
+    log_.log("   format        %u Hz, %u channel(s), PCM16",
+             static_cast<unsigned>(config.sampleRateHz),
              static_cast<unsigned>(config.channels));
-    log_.log("  duration    %u s", static_cast<unsigned>(config.durationSeconds));
-    log_.log("  strategy    %s",
+    log_.log("   duration      %u s", static_cast<unsigned>(config.durationSeconds));
+    log_.log("   clip size     %llu bytes including the 44-byte WAV header",
+             static_cast<unsigned long long>(frames));
+    log_.log("   right shift   %u (smaller = more gain)",
+             static_cast<unsigned>(config.rightShift));
+    log_.log("   strategy      %s",
              config.strategy == CaptureStrategy::Streaming ? "streaming" : "full-buffer");
-    log_.log("  right shift %u (smaller = more gain)", static_cast<unsigned>(config.rightShift));
-    log_.log("  clip size   %llu bytes", static_cast<unsigned long long>(frames));
-    log_.log("  mounted     %s", recorder_.isStorageMounted() ? "yes" : "no");
-
+    log_.log("");
+    log_.log(" Storage");
     if (recorder_.isStorageMounted()) {
-        log_.log("  card free   %llu of %llu bytes",
+        log_.log("   card          mounted, %llu of %llu bytes free",
                  static_cast<unsigned long long>(recorder_.storageFreeBytes()),
                  static_cast<unsigned long long>(recorder_.storageTotalBytes()));
+    } else {
+        log_.log("   card          not mounted (mounted only for SAVE and LIST)");
     }
 
     if (recorder_.hasPending()) {
-        log_.log("  pending     '%s', %llu frames awaiting SAVE", recorder_.pendingLabel(),
+        log_.log("   pending       '%s', %llu frames awaiting SAVE", recorder_.pendingLabel(),
                  static_cast<unsigned long long>(recorder_.pendingFrames()));
     } else {
-        log_.log("  pending     none");
+        log_.log("   pending       none");
     }
+    log_.log("");
+    log_.log(" Last capture");
 
     const CaptureReport &last = recorder_.lastReport();
     if (last.framesCaptured > 0) {
-        log_.log("  last clip   %llu frames in %u ms, peak %u, rms %.1f, dc %.1f, clipped %u",
+        log_.log("   %llu frames in %u ms",
                  static_cast<unsigned long long>(last.framesCaptured),
-                 static_cast<unsigned>(last.elapsedMs), last.audio.peakMagnitude, last.audio.rms(),
-                 last.audio.mean(), last.audio.clippedSamples);
+                 static_cast<unsigned>(last.elapsedMs));
+        log_.log("   peak %u, rms %.1f, dc %.1f, clipped %u", last.audio.peakMagnitude,
+                 last.audio.rms(), last.audio.mean(), last.audio.clippedSamples);
+    } else {
+        log_.log("   none");
     }
+    log_.log("============================================================");
     log_.log("");
 }
 

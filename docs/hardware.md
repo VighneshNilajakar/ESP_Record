@@ -15,7 +15,8 @@ This is the setup the original HOTPIN recorder was developed around.
 
 Other settings:
 
-- Recording LED: GPIO4, active HIGH in this profile.
+- Recording LED: GPIO4, active HIGH in this profile. On while recording, three
+  short blinks after a successful save, off otherwise.
 - Sample rate: 16,000 Hz.
 - Audio output: mono, signed PCM16 little-endian WAV.
 - Input I2S slot: 32-bit **right** slot on the reference board (measured; see

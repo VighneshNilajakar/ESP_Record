@@ -18,13 +18,14 @@ namespace adapters {
  * wrong inverts every state, so it is an explicit parameter rather than an
  * assumption.
  *
- * allOff() drives the pin to the inactive level, which is also the
- * low-power state, and is called by the controller on every exit path.
+ * setRecording() holds the LED on for the whole capture. setSuccess() pulses
+ * it three times and leaves it off -- the controller calls it only after the
+ * card has been unmounted, so toggling GPIO4 (SD D1 on the ESP32-CAM) cannot
+ * disturb the bus. allOff() and setError() leave it off.
  *
- * A single pin can only show two states, so idle and error look identical and
- * success looks the same as recording. That is a property of one-wire LEDs, not
- * a bug; if the states must be distinguishable, drive separate LEDs or a
- * NeoPixel from a custom IIndicator.
+ * Every write re-asserts pinMode(): SD_MMC reconfigures GPIO4 while the card is
+ * mounted, and a plain digitalWrite() on the pin the SD driver left behind is
+ * why a "success" LED could stay lit after SAVE.
  */
 class GpioIndicator : public IIndicator {
 public:
@@ -46,7 +47,19 @@ public:
 
     void setIdle() { write(false); }
     void setRecording() { write(true); }
-    void setSuccess() { write(true); }
+
+    /* Momentary: three pulses, then off. Blocking for ~450 ms, which is fine
+     * for a console command that has just finished a multi-second SD write. */
+    void setSuccess() {
+        if (!configured_) return;
+        for (uint8_t i = 0; i < 3; ++i) {
+            write(true);
+            delay(80);
+            write(false);
+            delay(70);
+        }
+    }
+
     void setError() { write(false); }
     void allOff() { write(false); }
 
@@ -57,6 +70,7 @@ private:
 
     void write(bool on) {
         if (!configured_) return;
+        pinMode(pin_, OUTPUT);
         digitalWrite(pin_, on ? (activeLow_ ? LOW : HIGH) : inactiveLevel());
     }
 

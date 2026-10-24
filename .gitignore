@@ -10,6 +10,11 @@ build/
 *.a
 *.obj
 
+# Local configuration: .env is copied from .env.example, and config.h is
+# generated from it by tools/gen_config.py.
+.env
+/config.h
+
 # Python
 __pycache__/
 *.py[cod]

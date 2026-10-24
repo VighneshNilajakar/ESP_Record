@@ -27,6 +27,11 @@
  *   VDD 3V3, GND GND, SCK GPIO14, WS GPIO15, SD GPIO12, L/R GND
  *   GPIO4 is the flash LED; it is part of the SD bus and is off during saves.
  *
+ * Configure (optional): copy .env.example to .env, edit it, run
+ *   python tools/gen_config.py
+ * then build. The generated config.h is gitignored; without it the defaults
+ * below apply.
+ *
  * Build (from this directory):
  *   arduino-cli compile --fqbn esp32:esp32:esp32cam .
  * The includes are prefixed with src/ on purpose: Arduino compiles a sketch's
@@ -41,6 +46,11 @@
 
 #include <Arduino.h>
 #include <esp_system.h>
+
+/* Build-time settings generated from .env (see tools/gen_config.py). */
+#if __has_include("config.h")
+#include "config.h"
+#endif
 
 #include "src/AudioDatasetRecorder.h"
 #include "src/CommandConsole.h"
@@ -83,8 +93,24 @@ using namespace AudioDatasetRecorder::adapters;
 #define ADR_I2S_SLOT_RIGHT 1
 #endif
 
-#ifndef ADR_RECORDING_LED_PIN
-#define ADR_RECORDING_LED_PIN 4
+#ifndef ADR_PIN_BCLK
+#define ADR_PIN_BCLK 14
+#endif
+
+#ifndef ADR_PIN_WS
+#define ADR_PIN_WS 15
+#endif
+
+#ifndef ADR_PIN_DOUT
+#define ADR_PIN_DOUT 12
+#endif
+
+#ifndef ADR_PIN_LED
+#define ADR_PIN_LED 4
+#endif
+
+#ifndef ADR_LED_ACTIVE_HIGH
+#define ADR_LED_ACTIVE_HIGH 1
 #endif
 
 #ifndef ADR_SD_MOUNT_POINT
@@ -101,8 +127,19 @@ using namespace AudioDatasetRecorder::adapters;
 #define ADR_SD_FREQUENCY_KHZ 4000
 #endif
 
+/* BCLK and WS are outputs on the original ESP32; GPIO34-39 cannot drive them. */
+#define ADR_DATA_PINS_VALID                                                   \
+    (ADR_PIN_BCLK >= 0 && ADR_PIN_BCLK < 34 && ADR_PIN_WS >= 0 &&               \
+     ADR_PIN_WS < 34 && ADR_PIN_DOUT >= 0 && ADR_PIN_DOUT <= 39 &&              \
+     ADR_PIN_LED >= 0 && ADR_PIN_LED <= 39 && ADR_PIN_BCLK != ADR_PIN_WS &&     \
+     ADR_PIN_BCLK != ADR_PIN_DOUT && ADR_PIN_BCLK != ADR_PIN_LED &&             \
+     ADR_PIN_WS != ADR_PIN_DOUT && ADR_PIN_WS != ADR_PIN_LED &&                 \
+     ADR_PIN_DOUT != ADR_PIN_LED)
+
 static_assert(ADR_RECORD_SECONDS > 0, "ADR_RECORD_SECONDS must be positive");
 static_assert(ADR_SAMPLE_RATE_HZ > 0, "ADR_SAMPLE_RATE_HZ must be positive");
+static_assert(ADR_DATA_PINS_VALID,
+              "pins must be distinct GPIOs 0-39; BCLK and WS must be <= 33");
 
 /* -------------------------------------------------------------- objects */
 
@@ -115,7 +152,9 @@ static ArduinoLogger g_log(Serial);
 static StreamTransport g_transport(Serial);
 static SerialProgressSink g_progress(Serial);
 
-static const profiles::AudioPinMap kPins = profiles::kAiThinkerEsp32CamInmp441;
+static const profiles::AudioPinMap kPins(static_cast<int8_t>(ADR_PIN_BCLK),
+                                         static_cast<int8_t>(ADR_PIN_WS),
+                                         static_cast<int8_t>(ADR_PIN_DOUT));
 
 static RecorderController g_recorder(g_audio, g_storage, g_indicator, g_clock, g_memory, g_log);
 static CommandConsole g_console(g_recorder, g_transport, g_log);
@@ -149,7 +188,7 @@ static const char *resetReasonName(esp_reset_reason_t reason) {
 
 static void reportResetReason() {
     const esp_reset_reason_t reason = esp_reset_reason();
-    g_log.log("  reset      %s", resetReasonName(reason));
+    g_log.log(" Reset    %s", resetReasonName(reason));
     if (reason != ESP_RST_BROWNOUT) return;
 
     /*
@@ -185,9 +224,9 @@ void setup() {
     g_storage.configure(ADR_SD_MOUNT_POINT, /* oneBit */ true, ADR_SD_FREQUENCY_KHZ);
 
     const Status indicatorStatus =
-        g_indicator.begin(ADR_RECORDING_LED_PIN, /* activeHigh */ true, false);
+        g_indicator.begin(static_cast<int8_t>(ADR_PIN_LED), ADR_LED_ACTIVE_HIGH != 0, false);
     if (indicatorStatus != Status::Ok) {
-        g_log.log("[setup] WARNING: no indicator on pin %d", ADR_RECORDING_LED_PIN);
+        g_log.log("[setup] WARNING: no indicator on pin %d", ADR_PIN_LED);
     }
 
     RecorderConfig config;
@@ -210,33 +249,42 @@ void setup() {
 
     g_recorder.setProgressSink(&g_progress);
 
+    const uint64_t clipBytes = g_recorder.clipFileBytes(
+        static_cast<uint64_t>(ADR_SAMPLE_RATE_HZ) * ADR_RECORD_SECONDS);
+
     g_log.log("");
-    g_log.log("HOTPIN dataset recorder -- ESP32-CAM + INMP441 + SD_MMC");
+    g_log.log("============================================================");
+    g_log.log(" HOTPIN dataset recorder");
+    g_log.log(" ESP32-CAM + INMP441 + SD_MMC");
+    g_log.log("============================================================");
     reportResetReason();
-    g_log.log("  audio      %s, BCLK %d, WS %d, DOUT %d, %s slot", g_audio.name(), kPins.bclk,
-              kPins.ws, kPins.data, ADR_I2S_SLOT_RIGHT ? "right" : "left");
+    g_log.log(" Audio    %s on BCLK %d, WS %d, DOUT %d", g_audio.name(), kPins.bclk, kPins.ws,
+              kPins.data);
+    g_log.log(" Slot     %s, PCM right shift %d", ADR_I2S_SLOT_RIGHT ? "right" : "left",
+              ADR_I2S_PCM_RIGHT_SHIFT);
+    g_log.log(" Format   %u Hz mono PCM16, %u s per clip (%llu bytes)", ADR_SAMPLE_RATE_HZ,
+              ADR_RECORD_SECONDS, static_cast<unsigned long long>(clipBytes));
     if (ADR_SD_FREQUENCY_KHZ > 0) {
-        g_log.log("  storage    %s (one-bit), %d kHz", g_storage.name(), ADR_SD_FREQUENCY_KHZ);
+        g_log.log(" Storage  %s, 1-bit, %d kHz, mounted only for SAVE/LIST", g_storage.name(),
+                  ADR_SD_FREQUENCY_KHZ);
     } else {
-        g_log.log("  storage    %s (one-bit), board default (~20 MHz)", g_storage.name());
+        g_log.log(" Storage  %s, 1-bit, board default clock, mounted only for SAVE/LIST",
+                  g_storage.name());
     }
-    g_log.log("  format     %u Hz mono PCM16, %u s per clip", ADR_SAMPLE_RATE_HZ,
-              ADR_RECORD_SECONDS);
-    g_log.log("  right shift %u (16 = no extra gain)", ADR_I2S_PCM_RIGHT_SHIFT);
-    g_log.log("  strategy   full-buffer: capture to PSRAM, then mount and write");
+    g_log.log(" LED      GPIO %d active-%s, on while recording, 3 blinks after SAVE",
+              ADR_PIN_LED, ADR_LED_ACTIVE_HIGH ? "high" : "low");
+    g_log.log("============================================================");
     g_log.log("");
 
     if (!psramFound()) {
         g_log.log("[setup] WARNING: no PSRAM detected. %u s needs %llu bytes; reduce",
-                  ADR_RECORD_SECONDS,
-                  static_cast<unsigned long long>(g_recorder.clipFrameBytes(
-                      static_cast<uint64_t>(ADR_SAMPLE_RATE_HZ) * ADR_RECORD_SECONDS)));
+                  ADR_RECORD_SECONDS, static_cast<unsigned long long>(clipBytes));
         g_log.log("[setup] ADR_RECORD_SECONDS or the first RECORD will fail with OUT_OF_MEMORY.");
     }
 
-    /* Let the USB serial bridge settle before the first prompt is missed. */
+    /* Let the USB serial bridge settle before the menu is printed. */
     delay(700);
-    g_console.printBanner();
+    g_console.showHelp();
 }
 
 void loop() { g_console.poll(); }

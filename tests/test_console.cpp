@@ -152,7 +152,7 @@ void testListAndStatus() {
     const std::string status = f.log.joined();
     ADR_CHECK_STR_CONTAINS(status, "1000 Hz");
     ADR_CHECK_STR_CONTAINS(status, "full-buffer");
-    ADR_CHECK_STR_CONTAINS(status, "pending     none");
+    ADR_CHECK_STR_CONTAINS(status, "pending       none");
 }
 
 void testStatusReportsPendingClip() {
@@ -191,6 +191,19 @@ void testLongLineIsRejectedNotTruncated() {
     ADR_CHECK_STR_CONTAINS(f.log.joined(), "'noise'");
 }
 
+void testBootNoiseIsIgnored() {
+    Fixture f;
+    /* Bytes the ROM boot log leaves in the UART buffer at the wrong baud must
+     * not be reported as an unknown command. */
+    const char noise[] = {static_cast<char>(0x55), static_cast<char>(0x55),
+                          static_cast<char>(0xff), static_cast<char>(0xfe),
+                          static_cast<char>(0x80), static_cast<char>(0x0a),
+                          static_cast<char>(0x00)};
+    type(f, noise);
+    ADR_CHECK(f.log.lines.empty());
+    ADR_CHECK(!f.controller.hasPending());
+}
+
 void testPartialLineIsNotDispatched() {
     Fixture f;
     /* Without a newline the console must not act on half a command. */
@@ -216,5 +229,6 @@ void runConsoleTests() {
     testStatusReportsPendingClip();
     testListReportsMountFailure();
     testLongLineIsRejectedNotTruncated();
+    testBootNoiseIsIgnored();
     testPartialLineIsNotDispatched();
 }

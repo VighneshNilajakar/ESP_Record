@@ -79,8 +79,10 @@ always deletes it, including on failure paths.
 
 ### `IIndicator`
 
-A four-state LED. The core calls `allOff()` on every exit path, including every
-failure, so an interrupted recording cannot leave a pin driven.
+A status LED. `setRecording()` holds it on for the capture; `setSuccess()` is
+momentary and must end inactive (the GPIO adapter blinks three times), and the
+core calls `allOff()` on every exit path, including every failure, so an
+interrupted recording cannot leave a pin driven.
 
 ### `IClock`
 

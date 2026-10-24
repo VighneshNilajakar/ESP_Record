@@ -4,7 +4,7 @@
 
 - Confirm INMP441 VDD is 3.3 V and all grounds are common.
 - Verify BCLK, WS and DOUT pins against the active profile.
-- Confirm L/R selection matches the configured I2S slot (this profile ties L/R to GND and reads the left slot).
+- Confirm L/R selection matches the configured I2S slot. On the reference board L/R is tied to GND but the data appears in the **right** slot; set `I2S_SLOT=left` only if a scan shows the left slot is live.
 - Confirm the driver is actually receiving 32-bit words, and determine where the valid microphone bits are located.
 - Temporarily print/min/max of raw I2S words in a short diagnostic build. Avoid printing every sample, which can disturb capture timing.
 
@@ -36,6 +36,11 @@
 
 GPIO12 is an original ESP32 strapping pin. Power off before disconnecting DOUT, then retry boot. Another profile/pin plan may be needed for that board revision.
 
-## Arduino-ESP32 3.x fails to compile
+## Arduino-ESP32 3.x
 
-The reference `.ino` intentionally uses the legacy `driver/i2s.h` API and targets core 2.x. Add a distinct adapter using the current `ESP_I2S.h` API rather than mixing core APIs in one sketch. See https://docs.espressif.com/projects/arduino-esp32/en/latest/api/i2s.html.
+3.x builds select `EspI2sAudioSource` (the `ESP_I2S.h` API) automatically; 2.x
+builds use `LegacyI2sAudioSource` (`driver/i2s.h`). Both paths are compile-tested,
+but only the 2.x path has been run on the reference board here. If a 3.x build
+fails, check `src/adapters/CoreVersion.h` and the adapter's `begin()` arguments
+against the core version, not the sketch. See
+https://docs.espressif.com/projects/arduino-esp32/en/latest/api/i2s.html.

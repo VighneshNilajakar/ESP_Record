@@ -54,7 +54,7 @@ jobs:
         run: python -m unittest discover -s tests -p "test_*.py" -v
 
       - name: Compile the WAV tool standalone
-        run: python -m py_compile tools/analyze_wav.py
+        run: python -m py_compile tools/analyze_wav.py tools/gen_config.py
 
   board-compiles:
     name: ${{ matrix.label }}
