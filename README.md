@@ -58,13 +58,15 @@ successful save. Treat it as an observed workaround on one board revision,
 **not** a recommendation.
 
 The reference board was brought up on Arduino-ESP32 2.0.14: capture reported
-80000/80000 frames in 5008 ms and a 160044-byte WAV was written and listed. Two
-results from that run contradict the obvious reading of the datasheet, and both
-are configurable at build time: the microphone delivered its data in the right
-I2S slot even with L/R tied to GND (`ADR_I2S_SLOT_RIGHT`), and SD writes browned
-out the board at the default 20 MHz clock but completed at 4 MHz
-(`ADR_SD_FREQUENCY_KHZ`). The clock is a stopgap; the real fix is bulk
-capacitance on the 5 V rail. See
+80000/80000 frames in 5008 ms and a 160044-byte WAV was written and listed.
+The root sketch was then run for the full 20 s clip: 320000/320000 frames in
+20001 ms, peak 8777, RMS 797.2, 0 clipped samples, and two consecutive
+640044-byte saves completed without a brownout at 4 MHz. Two results from that
+run contradict the obvious reading of the datasheet, and both are configurable
+at build time: the microphone delivered its data in the right I2S slot even with
+L/R tied to GND (`ADR_I2S_SLOT_RIGHT`), and SD writes browned out the board at
+the default 20 MHz clock but completed at 4 MHz (`ADR_SD_FREQUENCY_KHZ`). The
+clock is a stopgap; the real fix is bulk capacitance on the 5 V rail. See
 [docs/support-matrix.md](docs/support-matrix.md) for the measurements.
 
 ## Ready-to-flash sketch

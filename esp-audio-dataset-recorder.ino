@@ -7,9 +7,10 @@
  * AI-Thinker ESP32-CAM reference, not guessed.
  *
  *   1. SDMMC runs at 4 MHz (ADR_SD_FREQUENCY_KHZ). At the 20 MHz default the
- *      board browned out the moment the first write started. 4 MHz completed
- *      the same 160 KB write on the same supply. Lowering the clock is a
- *      stopgap for a rail with too little bulk capacitance, not a cure.
+ *      board browned out the moment the first write started. At 4 MHz two
+ *      consecutive 20 s clips (640044 bytes each) were written without a
+ *      reset. Lowering the clock is a stopgap for a rail with too little bulk
+ *      capacitance, not a cure.
  *   2. The microphone is read from the RIGHT I2S slot. With L/R tied to GND the
  *      datasheet says left, but this board delivered signal in the right slot
  *      and exact zeros in the left one.

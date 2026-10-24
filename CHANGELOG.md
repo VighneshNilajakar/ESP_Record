@@ -167,12 +167,14 @@ Arduino-ESP32 3.2.0, a newer core than the CI matrix tests.
 
 ### Not claimed
 
-- Capture, metering and saving were verified once on the reference ESP32-CAM:
+- Capture, metering and saving were verified on one reference ESP32-CAM:
   `RECORD` reported 80000/80000 frames in 5008 ms and `/test.001.wav` was
-  written at 160044 bytes and listed back. Every other board, and every 3.x
-  build, is compile-tested only; no 3.x board was available. See
-  `docs/support-matrix.md` for the measurements and `docs/hardware-checklist.md`
-  for the wiring that produced them.
+  written at 160044 bytes and listed back. The root sketch was later run for the
+  full 20 s clip (320000/320000 frames, `clipped 0`), and two consecutive
+  640044-byte saves completed at 4 MHz with no brownout reset. Every other
+  board, and every 3.x build, is compile-tested only; no 3.x board was
+  available. See `docs/support-matrix.md` for the measurements and
+  `docs/hardware-checklist.md` for the wiring that produced them.
 
 ## 0.1.0 — initial GitHub-ready baseline
 

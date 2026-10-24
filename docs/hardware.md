@@ -11,14 +11,15 @@ This is the setup the original HOTPIN recorder was developed around.
 | SCK/BCLK | GPIO14 |
 | WS/LRCL | GPIO15 |
 | SD/DOUT | GPIO12 (user-reported working setup; see warning below) |
-| L/R | GND for left channel |
+| L/R | GND; the reference board still delivered data in the right slot |
 
 Other settings:
 
 - Recording LED: GPIO4, active HIGH in this profile.
 - Sample rate: 16,000 Hz.
 - Audio output: mono, signed PCM16 little-endian WAV.
-- Input I2S slot: 32-bit left slot, then conversion to PCM16.
+- Input I2S slot: 32-bit **right** slot on the reference board (measured; see
+  below), then a right shift of 16 to PCM16.
 - Storage: onboard microSD through `SD_MMC.begin("/sdcard", true)` (one-bit mode).
 - Capture buffer: PSRAM, one whole clip at a time.
 
@@ -37,6 +38,8 @@ GPIO4 drives the flash LED and is also the SD_MMC D1 line. The example only togg
 Use a regulated 5 V supply with sufficient peak-current capability for the ESP32-CAM and SD-card startup/write loads. Supply ESP32-CAM power through its **5V** pin and ground, not its 3.3 V pin. If UART is connected through an FTDI adapter while a separate 5 V supply powers the board, share ground and TX/RX as required but do not tie two independent 5 V outputs together.
 
 Keep brownout detection enabled in normal operation. A brownout at SD initialization is evidence to check voltage droop, wiring, source capability, card, and peripheral sharing—not a reason to silently disable protection.
+
+On the reference board, writes at the 20 MHz SDMMC default browned out the board. At 4 MHz, two consecutive 20 s clips (640044 bytes each) were written without a reset. That is a measurement of one board on one supply, not a general guarantee: treat 4 MHz as the conservative default and 20 MHz as something to re-test only after the supply has bulk capacitance.
 
 ## Porting to other boards
 
