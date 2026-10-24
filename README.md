@@ -67,6 +67,21 @@ out the board at the default 20 MHz clock but completed at 4 MHz
 capacitance on the 5 V rail. See
 [docs/support-matrix.md](docs/support-matrix.md) for the measurements.
 
+## Ready-to-flash sketch
+
+`esp-audio-dataset-recorder.ino` in the repository root is the reference board
+wired to this library: 20 s clips, 16 kHz mono, the right I2S slot, a 16-bit
+shift and SDMMC at 4 MHz -- the clock that stopped the reference board from
+browning out mid-save. It also reports the reset reason at boot, so a repeat
+brownout is visible instead of silent.
+
+It includes `src/` directly and is compiled from the repository root, so do not
+pass `--library` (that would compile every source twice):
+
+```
+arduino-cli compile --fqbn esp32:esp32:esp32cam .
+```
+
 ## Install
 
 Copy this repository into your Arduino libraries directory, or install the ZIP via

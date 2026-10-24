@@ -109,13 +109,16 @@ using namespace AudioDatasetRecorder::adapters;
 #endif
 
 /*
- * SDMMC clock in kHz; 0 keeps the board default (20 MHz). Drop to 4000 if the
- * card browns out the board the moment it starts writing. That is the usual
- * symptom of a 3.3 V rail with too little bulk capacitance, so lowering the
- * clock is a stopgap, not a fix.
+ * SDMMC clock in kHz; 0 keeps the board default (20 MHz).
+ *
+ * 4 MHz is the default because 20 MHz browned out this reference board on the
+ * first write, and a recorder that resets before its first save is not usable.
+ * That is the usual symptom of a 3.3 V rail with too little bulk capacitance:
+ * lowering the clock is a stopgap, not a fix. Raise this only after confirming
+ * the supply, and expect a save at 20 MHz to be roughly five times faster.
  */
 #ifndef ADR_SD_FREQUENCY_KHZ
-#define ADR_SD_FREQUENCY_KHZ 0
+#define ADR_SD_FREQUENCY_KHZ 4000
 #endif
 
 static_assert(ADR_RECORD_SECONDS > 0, "ADR_RECORD_SECONDS must be positive");
@@ -174,8 +177,8 @@ void setup() {
 
     g_log.log("");
     g_log.log("AudioDatasetRecorder -- AI-Thinker ESP32-CAM + INMP441 + SD_MMC");
-    g_log.log("  audio      %s, BCLK %d, WS %d, DOUT %d, left slot", g_audio.name(), kPins.bclk,
-              kPins.ws, kPins.data);
+    g_log.log("  audio      %s, BCLK %d, WS %d, DOUT %d, %s slot", g_audio.name(), kPins.bclk,
+              kPins.ws, kPins.data, ADR_I2S_SLOT_RIGHT ? "right" : "left");
     g_log.log("  storage    %s (one-bit)", g_storage.name());
     g_log.log("  format     %u Hz mono PCM16, %u s per clip", ADR_SAMPLE_RATE_HZ,
               ADR_RECORD_SECONDS);

@@ -31,6 +31,9 @@ All notable changes to this project are documented here.
 - `profiles/BoardProfiles.h`: named pin maps with their constraints documented.
 - Examples `ESP32_I2S_SPI_SD` and `ESP32_S3_I2S_SPI_SD`; the ESP32-CAM example
   now selects its adapter by core version, so all three build on 2.x and 3.x.
+- `esp-audio-dataset-recorder.ino` in the repository root: the reference board
+  as a single ready-to-flash sketch, including the 4 MHz SDMMC setting and a
+  boot-time brownout report. It builds in place without `--library`.
 - `platformio.ini` and a CI board-compile matrix via `arduino-cli`.
 - `docs/support-matrix.md` and `docs/hardware-checklist.md`.
 - `keywords.txt` for Arduino IDE highlighting.
@@ -145,7 +148,8 @@ Arduino-ESP32 3.2.0, a newer core than the CI matrix tests.
   is MSB-aligned in a 32-bit slot, and 14 clipped 571 of 80000 frames.
 - `SdMmcStorage::configure` accepts an SDMMC clock in kHz. At the 20 MHz default
   the first write browned out the reference board; 4 MHz completed the same
-  write. The example exposes this as `ADR_SD_FREQUENCY_KHZ`.
+  write. The ESP32-CAM example and the root sketch now default to
+  `ADR_SD_FREQUENCY_KHZ=4000`; 0 restores the 20 MHz board default.
 
 ### Changed
 

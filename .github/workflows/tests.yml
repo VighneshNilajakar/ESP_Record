@@ -72,6 +72,13 @@ jobs:
             fqbn: "esp32:esp32:esp32"
             sketch: "examples/ESP32_I2S_SPI_SD"
             label: "Generic ESP32 + I2S + SPI SD, 2.x"
+          # The root sketch includes src/ directly and must NOT be given
+          # --library, or every source is compiled twice.
+          - core: "esp32:esp32@2.0.14"
+            fqbn: "esp32:esp32:esp32cam"
+            sketch: "."
+            with_library: "false"
+            label: "Root sketch, no --library"
 
           # Arduino-ESP32 3.x: ESP_I2S.h.
           - core: "esp32:esp32@3.0.2"
@@ -134,7 +141,11 @@ jobs:
       - name: Compile ${{ matrix.sketch }}
         run: |
           set -euo pipefail
-          arduino-cli compile             --fqbn "${{ matrix.fqbn }}"             --warnings all             --library "$(pwd)"             "${{ matrix.sketch }}"
+          if [ "${{ matrix.with_library }}" = "false" ]; then
+            arduino-cli compile               --fqbn "${{ matrix.fqbn }}"               --warnings all               "${{ matrix.sketch }}"
+          else
+            arduino-cli compile               --fqbn "${{ matrix.fqbn }}"               --warnings all               --library "$(pwd)"               "${{ matrix.sketch }}"
+          fi
 
   example-guards:
     name: Example self-consistency
