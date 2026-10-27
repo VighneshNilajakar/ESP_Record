@@ -20,7 +20,8 @@ Other settings:
 - Sample rate: 16,000 Hz.
 - Audio output: mono, signed PCM16 little-endian WAV.
 - Input I2S slot: 32-bit **right** slot on the reference board (measured; see
-  below), then a right shift of 16 to PCM16.
+  below), then a PCM16 right shift of 15 in the reference sketch (16 is the
+  unity 24-to-16 reduction; 15 adds +6 dB, measured at 14889 peak / 0 clipped).
 - Storage: onboard microSD through `SD_MMC.begin("/sdcard", true)` (one-bit mode).
 - Capture buffer: PSRAM, one whole clip at a time.
 

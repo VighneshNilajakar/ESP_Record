@@ -72,10 +72,10 @@ clock is a stopgap; the real fix is bulk capacitance on the 5 V rail. See
 ## Ready-to-flash sketch
 
 `esp-audio-dataset-recorder.ino` in the repository root is the reference board
-wired to this library: 20 s clips, 16 kHz mono, the right I2S slot, a 16-bit
-shift and SDMMC at 4 MHz -- the clock that stopped the reference board from
-browning out mid-save. It also reports the reset reason at boot, so a repeat
-brownout is visible instead of silent.
+wired to this library: 20 s clips, 16 kHz mono, the right I2S slot, a right
+shift of 15 (+6 dB over unity) and SDMMC at 4 MHz -- the clock that stopped the
+reference board from browning out mid-save. It also reports the reset reason at
+boot, so a repeat brownout is visible instead of silent.
 
 It includes `src/` directly and is compiled from the repository root, so do not
 pass `--library` (that would compile every source twice):
@@ -149,7 +149,7 @@ Edit the `#define`s at the top of the example, or pass build flags:
 
 ```cpp
 #define ADR_RECORD_SECONDS 20        // 60 s needs ~1.9 MB of PSRAM at 16 kHz
-#define ADR_I2S_PCM_RIGHT_SHIFT 16   // 24-bit data MSB-aligned in a 32-bit slot
+#define ADR_I2S_PCM_RIGHT_SHIFT 15   // 16 = unity 24->16; 15 adds +6 dB
 #define ADR_MIC_BCLK_PIN 14
 #define ADR_MIC_WS_PIN 15
 #define ADR_MIC_DATA_PIN 12
@@ -157,8 +157,11 @@ Edit the `#define`s at the top of the example, or pass build flags:
 ```
 
 The right shift describes the alignment between the microphone's raw word and
-PCM16 for the configured peripheral. It is **not** an INMP441 constant. Confirm
-it by measuring: record speech, then check the clip.
+PCM16 for the configured peripheral. It is **not** an INMP441 constant. The
+reference default is 15: 16 is the exact 24-to-16 reduction, while 15 adds 6 dB
+for the quiet INMP441 levels measured on this board. 14 was rejected after a
+loud take peaked at 31863/32768; see `docs/support-matrix.md`. Confirm any
+change by measuring: record speech, then check the clip.
 
 ## Inspect audio before training
 

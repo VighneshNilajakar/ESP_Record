@@ -15,6 +15,8 @@ The reference profile receives 32-bit I2S words and shifts them to produce PCM16
 - valid sample bits and channel slot;
 - whether a library has already converted 32-bit input to 16-bit PCM.
 
+On the reference board the exact 24-to-16 reduction is 16, but the sketch ships 15 (+6 dB) because the measured levels were quiet. That is a deliberate gain choice, not a different alignment; 16 restores unity. 14 was rejected: one loud take reached 31863/32768 and an earlier run clipped 571/80000 frames.
+
 Do not port `rightShift=14` blindly to another microphone or newer driver. First capture raw samples, check for changing values as you speak, confirm channel selection, then determine the correct signed conversion. Some microphones/driver combinations can place meaningful bits differently.
 
 ## Repeatable training data

@@ -56,9 +56,10 @@ FQBN `esp32:esp32:esp32cam`, SD_MMC in 1-bit mode, 16 kHz mono PCM16.
 | Save | 160044-byte WAV written, verified, and listed by `LIST` |
 | Save at 4 MHz, 20 s | Two consecutive 640044-byte WAVs written and listed, no reset; write took ~15.4 s |
 | Gain at shift 16 | peak 8777, RMS 797.2, DC -15.3 on the first 20 s clip; peak 2001, RMS 139.3 on the second |
+| Gain at shift 15 | peak 14889, RMS 1152.6, DC -41.8, 0 clipped (loud take); peak 3036, RMS 233.6, DC -33.2, 0 clipped (quiet take) |
 | I2S slot | Data appears in the **right** slot although INMP441 L/R was tied to GND; the left slot read exactly `0` for every frame |
 | Data pin | GPIO12 is the live data line. A scan of 12/13/2/4 found signal only on 12 |
-| Alignment | 24-bit data is MSB-aligned in the 32-bit slot, so the correct 16-bit reduction is a right shift of 16 |
+| Alignment | 24-bit data is MSB-aligned in the 32-bit slot, so the exact 16-bit reduction is 16; the reference sketch ships 15 (+6 dB) after measuring quiet recordings |
 | Gain at shift 14 | peak 32768, 571 of 80000 frames clipped |
 | SD mount | One 16 GB card timed out with `sdmmc_init_ocr: send_op_cond ... 0x107`; a second card mounted normally, so that failure was card-specific |
 | SD write current | At the default 20 MHz clock the first write triggered the brownout detector; at 4 MHz the same 160 KB write completed |

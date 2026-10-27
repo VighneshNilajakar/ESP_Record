@@ -62,19 +62,16 @@ using namespace AudioDatasetRecorder::adapters;
  * Alignment between the INMP441's raw 24-bit sample and PCM16, for a 32-bit
  * I2S slot.
  *
- * The microphone delivers 24-bit data MSB-aligned in the 32-bit slot, so
- * reducing to 16 bits is a shift of 16: the top 16 bits are the sample, and
- * anything smaller multiplies the gain. 14 was carried over from the earlier
- * sketch without measurement; on the reference board it produced peak 32768
- * with 571 clipped frames in a 5 s clip. 16 keeps the same recording at about
- * a quarter of the amplitude with no clipping.
- *
- * This is a property of the microphone and the slot width, not a tuning knob
- * to raise the level. Verify with the peak/rms printed after RECORD, or with
- * tools/analyze_wav.py, before changing it.
+ * The microphone delivers 24-bit data MSB-aligned in the 32-bit slot, so the
+ * unity 16-bit reduction is a shift of 16: the top 16 bits are the sample.
+ * Measured peaks at 16 were 2001-8777, while 14 reached
+ * 31863/32768 on a loud take and clipped 571/80000 frames in an earlier run.
+ * The example therefore ships 15 (+6 dB over unity); 16 restores unity gain
+ * and more headroom. Verify with the peak/rms printed after RECORD, or with
+ * tools/analyze_wav.py, before changing it for another microphone.
  */
 #ifndef ADR_I2S_PCM_RIGHT_SHIFT
-#define ADR_I2S_PCM_RIGHT_SHIFT 16
+#define ADR_I2S_PCM_RIGHT_SHIFT 15
 #endif
 
 #ifndef ADR_RECORDING_LED_PIN

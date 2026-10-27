@@ -159,6 +159,10 @@ Arduino-ESP32 3.2.0, a newer core than the CI matrix tests.
   behaviour.
 - The PCM alignment default moved from a right shift of 14 to 16. The INMP441
   is MSB-aligned in a 32-bit slot, and 14 clipped 571 of 80000 frames.
+- The reference sketches then moved from 16 to 15 (+6 dB). At 16 the measured
+  peaks were 2001-8777, while 14 reached 31863/32768 on a loud take; 15
+  measured 14889 peak with zero clipped samples. 16 remains the unity
+  conversion and is documented as such.
 - `SdMmcStorage::configure` accepts an SDMMC clock in kHz. At the 20 MHz default
   the first write browned out the reference board; 4 MHz completed the same
   write. The ESP32-CAM example and the root sketch now default to

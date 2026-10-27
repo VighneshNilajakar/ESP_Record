@@ -43,7 +43,7 @@ class GenConfigTests(unittest.TestCase):
         self.assertEqual(settings["ADR_RECORD_SECONDS"], "20UL")
         self.assertEqual(settings["ADR_SAMPLE_RATE_HZ"], "16000UL")
         self.assertEqual(settings["ADR_I2S_SLOT_RIGHT"], "1")
-        self.assertEqual(settings["ADR_I2S_PCM_RIGHT_SHIFT"], "16")
+        self.assertEqual(settings["ADR_I2S_PCM_RIGHT_SHIFT"], "15")
         self.assertEqual(settings["ADR_PIN_BCLK"], "14")
         self.assertEqual(settings["ADR_PIN_WS"], "15")
         self.assertEqual(settings["ADR_PIN_DOUT"], "12")

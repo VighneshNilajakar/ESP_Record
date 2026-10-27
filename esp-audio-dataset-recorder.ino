@@ -14,9 +14,10 @@
  *   2. The microphone is read from the RIGHT I2S slot. With L/R tied to GND the
  *      datasheet says left, but this board delivered signal in the right slot
  *      and exact zeros in the left one.
- *   3. The PCM right shift is 16. A shift of 13 (the old sketch's 16x gain)
- *      clipped 571 of 80000 frames; 16 is the correct 24-to-16 bit reduction
- *      for a sample that is MSB-aligned in a 32-bit slot.
+ *   3. The PCM right shift ships at 15, +6 dB over the unity 24-to-16
+ *      reduction (16). At 16 the measured peaks were 2001-8777; at 14
+ *      a loud take reached 31863/32768 and an earlier run clipped 571 of
+ *      80000 frames. 15 measured 14889 peak with zero clipped samples.
  *
  * The library also fixes the sequencing that matters on this board: capture
  * into PSRAM with CaptureStrategy::FullBuffer, release I2S, then mount SD_MMC
@@ -86,7 +87,7 @@ using namespace AudioDatasetRecorder::adapters;
 #endif
 
 #ifndef ADR_I2S_PCM_RIGHT_SHIFT
-#define ADR_I2S_PCM_RIGHT_SHIFT 16
+#define ADR_I2S_PCM_RIGHT_SHIFT 15
 #endif
 
 #ifndef ADR_I2S_SLOT_RIGHT
